@@ -23,6 +23,12 @@ import {
   type InsertFriendship,
   type InsertActivityFeed,
   type InsertSharedAchievement,
+  type UserNotificationPreferences,
+  type Notification,
+  type InsertUserNotificationPreferences,
+  type InsertNotification,
+  userNotificationPreferences,
+  notifications,
 } from "@shared/schema";
 import { db } from "./db";
 import { eq, and, or, gte, lte, desc, asc, sql, count } from "drizzle-orm";
@@ -99,6 +105,18 @@ export interface IStorage {
     score: number;
     reason: string;
   }[]>;
+  
+  // Notification operations
+  getUserNotificationPreferences(userId: string): Promise<UserNotificationPreferences | undefined>;
+  upsertUserNotificationPreferences(preferences: InsertUserNotificationPreferences): Promise<UserNotificationPreferences>;
+  getUserNotifications(userId: string, limit?: number): Promise<Notification[]>;
+  getUnreadNotificationsCount(userId: string): Promise<number>;
+  createNotification(notification: InsertNotification): Promise<Notification>;
+  markNotificationAsRead(notificationId: string, userId: string): Promise<Notification | undefined>;
+  markAllNotificationsAsRead(userId: string): Promise<void>;
+  deleteNotification(notificationId: string, userId: string): Promise<boolean>;
+  scheduleGoalReminders(userId: string): Promise<Notification[]>;
+  createAchievementCelebration(userId: string, achievement: Achievement): Promise<Notification>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -877,6 +895,151 @@ export class DatabaseStorage implements IStorage {
     return recommendations
       .sort((a, b) => b.score - a.score)
       .slice(0, categoryId ? 6 : 12); // Return 6 per category or 12 total
+  }
+
+  // Notification operations
+  async getUserNotificationPreferences(userId: string): Promise<UserNotificationPreferences | undefined> {
+    const [preferences] = await db
+      .select()
+      .from(userNotificationPreferences)
+      .where(eq(userNotificationPreferences.userId, userId));
+    return preferences;
+  }
+
+  async upsertUserNotificationPreferences(preferences: InsertUserNotificationPreferences): Promise<UserNotificationPreferences> {
+    const [result] = await db
+      .insert(userNotificationPreferences)
+      .values(preferences)
+      .onConflictDoUpdate({
+        target: userNotificationPreferences.userId,
+        set: {
+          ...preferences,
+          updatedAt: new Date(),
+        },
+      })
+      .returning();
+    return result;
+  }
+
+  async getUserNotifications(userId: string, limit = 20): Promise<Notification[]> {
+    return await db
+      .select()
+      .from(notifications)
+      .where(eq(notifications.userId, userId))
+      .orderBy(desc(notifications.createdAt))
+      .limit(limit);
+  }
+
+  async getUnreadNotificationsCount(userId: string): Promise<number> {
+    const result = await db
+      .select({ count: sql<number>`count(*)` })
+      .from(notifications)
+      .where(
+        and(
+          eq(notifications.userId, userId),
+          eq(notifications.read, false)
+        )
+      );
+    return result[0]?.count || 0;
+  }
+
+  async createNotification(notification: InsertNotification): Promise<Notification> {
+    const [newNotification] = await db
+      .insert(notifications)
+      .values(notification)
+      .returning();
+    return newNotification;
+  }
+
+  async markNotificationAsRead(notificationId: string, userId: string): Promise<Notification | undefined> {
+    const [updatedNotification] = await db
+      .update(notifications)
+      .set({ read: true })
+      .where(and(eq(notifications.id, notificationId), eq(notifications.userId, userId)))
+      .returning();
+    return updatedNotification;
+  }
+
+  async markAllNotificationsAsRead(userId: string): Promise<void> {
+    await db
+      .update(notifications)
+      .set({ read: true })
+      .where(
+        and(
+          eq(notifications.userId, userId),
+          eq(notifications.read, false)
+        )
+      );
+  }
+
+  async deleteNotification(notificationId: string, userId: string): Promise<boolean> {
+    const result = await db
+      .delete(notifications)
+      .where(and(eq(notifications.id, notificationId), eq(notifications.userId, userId)));
+    return result.rowCount > 0;
+  }
+
+  async scheduleGoalReminders(userId: string): Promise<Notification[]> {
+    // Get current week's incomplete goals
+    const weekStart = new Date();
+    weekStart.setDate(weekStart.getDate() - weekStart.getDay() + 1); // Set to Monday
+    
+    const incompleteGoals = await db
+      .select({
+        userGoal: userGoals,
+        goal: goals,
+        category: categories,
+      })
+      .from(userGoals)
+      .innerJoin(goals, eq(userGoals.goalId, goals.id))
+      .innerJoin(categories, eq(goals.categoryId, categories.id))
+      .where(
+        and(
+          eq(userGoals.userId, userId),
+          eq(userGoals.weekStart, weekStart),
+          eq(userGoals.completed, false)
+        )
+      );
+
+    const reminders: Notification[] = [];
+    for (const { userGoal, goal, category } of incompleteGoals) {
+      const reminder = await this.createNotification({
+        userId,
+        type: "goal_reminder",
+        title: `Don't forget: ${category.name} Goal`,
+        message: `You haven't completed "${goal.description}" yet this week. You've got this! 💪`,
+        data: {
+          userGoalId: userGoal.id,
+          goalId: goal.id,
+          categoryId: category.id,
+          categoryName: category.name,
+        },
+      });
+      reminders.push(reminder);
+    }
+
+    return reminders;
+  }
+
+  async createAchievementCelebration(userId: string, achievement: Achievement): Promise<Notification> {
+    const levelMessages = {
+      track: "You're on track! 🎯 Keep up the momentum!",
+      rock: "You're rocking it! 🚀 Great progress this week!",
+      slayed: "You absolutely slayed this week! 🔥 All categories completed!"
+    };
+
+    return await this.createNotification({
+      userId,
+      type: "achievement_celebration",
+      title: `Achievement Unlocked: ${achievement.level.charAt(0).toUpperCase() + achievement.level.slice(1)}!`,
+      message: levelMessages[achievement.level as keyof typeof levelMessages] || "Congratulations on your achievement!",
+      data: {
+        achievementId: achievement.id,
+        level: achievement.level,
+        categoriesCompleted: achievement.categoriesCompleted,
+        weekStart: achievement.weekStart,
+      },
+    });
   }
 }
 

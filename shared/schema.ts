@@ -103,6 +103,31 @@ export const sharedAchievements = pgTable("shared_achievements", {
   createdAt: timestamp("created_at").defaultNow(),
 });
 
+export const userNotificationPreferences = pgTable("user_notification_preferences", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  userId: varchar("user_id").notNull().references(() => users.id).unique(),
+  goalReminders: boolean("goal_reminders").default(true),
+  achievementCelebrations: boolean("achievement_celebrations").default(true),
+  friendActivity: boolean("friend_activity").default(true),
+  weeklyRecap: boolean("weekly_recap").default(true),
+  reminderTime: varchar("reminder_time").default("18:00"), // 6 PM default
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+});
+
+export const notifications = pgTable("notifications", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  userId: varchar("user_id").notNull().references(() => users.id),
+  type: varchar("type", { length: 50 }).notNull(), // "goal_reminder", "achievement_celebration", "friend_activity", "weekly_recap"
+  title: varchar("title", { length: 255 }).notNull(),
+  message: text("message").notNull(),
+  data: jsonb("data"), // Additional notification data
+  read: boolean("read").default(false),
+  scheduledFor: timestamp("scheduled_for"), // For future notifications
+  sentAt: timestamp("sent_at"),
+  createdAt: timestamp("created_at").defaultNow(),
+});
+
 // Relations
 export const categoriesRelations = relations(categories, ({ many }) => ({
   goals: many(goals),
@@ -120,7 +145,7 @@ export const goalsRelations = relations(goals, ({ one, many }) => ({
   userGoals: many(userGoals),
 }));
 
-export const usersRelations = relations(users, ({ many }) => ({
+export const usersRelations = relations(users, ({ one, many }) => ({
   userGoals: many(userGoals),
   achievements: many(achievements),
   customGoals: many(goals),
@@ -128,6 +153,8 @@ export const usersRelations = relations(users, ({ many }) => ({
   receivedFriendships: many(friendships, { relationName: "addressee" }),
   activities: many(activityFeed),
   sharedAchievements: many(sharedAchievements),
+  notificationPreferences: one(userNotificationPreferences),
+  notifications: many(notifications),
 }));
 
 export const userGoalsRelations = relations(userGoals, ({ one }) => ({
@@ -180,6 +207,20 @@ export const sharedAchievementsRelations = relations(sharedAchievements, ({ one 
   }),
 }));
 
+export const userNotificationPreferencesRelations = relations(userNotificationPreferences, ({ one }) => ({
+  user: one(users, {
+    fields: [userNotificationPreferences.userId],
+    references: [users.id],
+  }),
+}));
+
+export const notificationsRelations = relations(notifications, ({ one }) => ({
+  user: one(users, {
+    fields: [notifications.userId],
+    references: [users.id],
+  }),
+}));
+
 // Schemas
 export const insertCategorySchema = createInsertSchema(categories).omit({
   id: true,
@@ -217,6 +258,17 @@ export const insertSharedAchievementSchema = createInsertSchema(sharedAchievemen
   createdAt: true,
 });
 
+export const insertUserNotificationPreferencesSchema = createInsertSchema(userNotificationPreferences).omit({
+  id: true,
+  createdAt: true,
+  updatedAt: true,
+});
+
+export const insertNotificationSchema = createInsertSchema(notifications).omit({
+  id: true,
+  createdAt: true,
+});
+
 export const selectGoalSchema = createInsertSchema(userGoals).pick({
   goalId: true,
 });
@@ -238,6 +290,10 @@ export type InsertAchievement = z.infer<typeof insertAchievementSchema>;
 export type InsertFriendship = z.infer<typeof insertFriendshipSchema>;
 export type InsertActivityFeed = z.infer<typeof insertActivityFeedSchema>;
 export type InsertSharedAchievement = z.infer<typeof insertSharedAchievementSchema>;
+export type InsertUserNotificationPreferences = z.infer<typeof insertUserNotificationPreferencesSchema>;
+export type InsertNotification = z.infer<typeof insertNotificationSchema>;
+export type UserNotificationPreferences = typeof userNotificationPreferences.$inferSelect;
+export type Notification = typeof notifications.$inferSelect;
 export type SelectGoal = z.infer<typeof selectGoalSchema>;
 
 // Authentication schemas

@@ -601,6 +601,127 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Notification routes
+  app.get('/api/notifications', isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user!.id;
+      const { limit } = req.query;
+      const notifications = await storage.getUserNotifications(userId, limit ? parseInt(limit) : undefined);
+      res.json(notifications);
+    } catch (error) {
+      console.error("Error fetching notifications:", error);
+      res.status(500).json({ message: "Failed to fetch notifications" });
+    }
+  });
+
+  app.get('/api/notifications/count', isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user!.id;
+      const count = await storage.getUnreadNotificationsCount(userId);
+      res.json({ count });
+    } catch (error) {
+      console.error("Error fetching notification count:", error);
+      res.status(500).json({ message: "Failed to fetch notification count" });
+    }
+  });
+
+  app.put('/api/notifications/:id/read', isAuthenticated, async (req: any, res) => {
+    try {
+      const { id } = req.params;
+      const userId = req.user!.id;
+      const notification = await storage.markNotificationAsRead(id, userId);
+      
+      if (!notification) {
+        return res.status(404).json({ message: "Notification not found or unauthorized" });
+      }
+      
+      res.json(notification);
+    } catch (error) {
+      console.error("Error marking notification as read:", error);
+      res.status(500).json({ message: "Failed to mark notification as read" });
+    }
+  });
+
+  app.put('/api/notifications/read-all', isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user!.id;
+      await storage.markAllNotificationsAsRead(userId);
+      res.json({ message: "All notifications marked as read" });
+    } catch (error) {
+      console.error("Error marking all notifications as read:", error);
+      res.status(500).json({ message: "Failed to mark all notifications as read" });
+    }
+  });
+
+  app.delete('/api/notifications/:id', isAuthenticated, async (req: any, res) => {
+    try {
+      const { id } = req.params;
+      const userId = req.user!.id;
+      const deleted = await storage.deleteNotification(id, userId);
+      
+      if (!deleted) {
+        return res.status(404).json({ message: "Notification not found or unauthorized" });
+      }
+      
+      res.status(204).send();
+    } catch (error) {
+      console.error("Error deleting notification:", error);
+      res.status(500).json({ message: "Failed to delete notification" });
+    }
+  });
+
+  app.get('/api/notifications/preferences', isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user!.id;
+      let preferences = await storage.getUserNotificationPreferences(userId);
+      
+      // Create default preferences if none exist
+      if (!preferences) {
+        preferences = await storage.upsertUserNotificationPreferences({ userId });
+      }
+      
+      res.json(preferences);
+    } catch (error) {
+      console.error("Error fetching notification preferences:", error);
+      res.status(500).json({ message: "Failed to fetch notification preferences" });
+    }
+  });
+
+  app.put('/api/notifications/preferences', isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user!.id;
+      const { goalReminders, achievementCelebrations, friendActivity, weeklyRecap, reminderTime } = req.body;
+      
+      const preferences = await storage.upsertUserNotificationPreferences({
+        userId,
+        goalReminders,
+        achievementCelebrations,
+        friendActivity,
+        weeklyRecap,
+        reminderTime,
+      });
+      
+      res.json(preferences);
+    } catch (error) {
+      console.error("Error updating notification preferences:", error);
+      res.status(500).json({ message: "Failed to update notification preferences" });
+    }
+  });
+
+  app.post('/api/notifications/reminders', isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user!.id;
+      const reminders = await storage.scheduleGoalReminders(userId);
+      res.json({ 
+        message: `Created ${reminders.length} goal reminders`,
+        reminders 
+      });
+    } catch (error) {
+      console.error("Error scheduling goal reminders:", error);
+      res.status(500).json({ message: "Failed to schedule goal reminders" });
+    }
+  });
+
   const httpServer = createServer(app);
   return httpServer;
 }
