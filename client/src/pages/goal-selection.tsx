@@ -27,12 +27,20 @@ interface Goal {
   createdAt: string;
 }
 
+interface Recommendation {
+  goalId: string;
+  goal: Goal & { category: Category };
+  score: number;
+  reason: string;
+}
+
 export default function GoalSelection() {
   const { user, isLoading: authLoading, isAuthenticated } = useAuth();
   const { toast } = useToast();
   const queryClient = useQueryClient();
   const [, setLocation] = useLocation();
   const [selectedGoals, setSelectedGoals] = useState<Record<string, string[]>>({});
+  const [showRecommendations, setShowRecommendations] = useState(false);
   const [customGoalForm, setCustomGoalForm] = useState<{
     isOpen: boolean;
     categoryId: string;
@@ -74,6 +82,12 @@ export default function GoalSelection() {
       return Promise.all(goalPromises);
     },
     enabled: isAuthenticated && !!categories,
+    retry: false,
+  });
+
+  const { data: recommendations, isLoading: recommendationsLoading } = useQuery<Recommendation[]>({
+    queryKey: ["/api/goals/recommendations"],
+    enabled: isAuthenticated && showRecommendations,
     retry: false,
   });
 
@@ -191,6 +205,42 @@ export default function GoalSelection() {
     // This ensures the new goal appears in the list
   };
 
+  const handleSelectRecommendation = (recommendation: Recommendation) => {
+    const { goalId, goal } = recommendation;
+    const categoryId = goal.category.id;
+    
+    // Check if we can add this goal
+    const categoryGoals = selectedGoals[categoryId] || [];
+    if (categoryGoals.length >= 2) {
+      toast({
+        title: "Category Full",
+        description: `You already have 2 goals selected for ${goal.category.name}`,
+        variant: "destructive",
+      });
+      return;
+    }
+
+    if (categoryGoals.includes(goalId)) {
+      toast({
+        title: "Already Selected",
+        description: "This goal is already in your selection",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    // Add the goal to selected goals
+    setSelectedGoals(prev => ({
+      ...prev,
+      [categoryId]: [...categoryGoals, goalId],
+    }));
+
+    toast({
+      title: "Goal Added",
+      description: `Added "${goal.description}" to ${goal.category.name}`,
+    });
+  };
+
   if (authLoading || categoriesLoading || goalsLoading) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-background">
@@ -226,18 +276,102 @@ export default function GoalSelection() {
             <h1 className="text-2xl font-bold text-foreground" data-testid="text-page-title">
               Select Your Weekly Goals
             </h1>
-            <Button
-              variant="outline"
-              onClick={() => setLocation("/")}
-              data-testid="button-back-dashboard"
-            >
-              Back to Dashboard
-            </Button>
+            <div className="flex gap-2">
+              <Button
+                variant={showRecommendations ? "default" : "outline"}
+                onClick={() => setShowRecommendations(!showRecommendations)}
+                data-testid="button-toggle-recommendations"
+              >
+                <i className="fas fa-lightbulb mr-2"></i>
+                {showRecommendations ? "Hide" : "Show"} Recommendations
+              </Button>
+              <Button
+                variant="outline"
+                onClick={() => setLocation("/")}
+                data-testid="button-back-dashboard"
+              >
+                Back to Dashboard
+              </Button>
+            </div>
           </div>
           <p className="text-muted-foreground">
             Choose 2 goals from each category for this week ({getTotalSelectedGoals()}/12 selected)
           </p>
         </div>
+
+        {/* Recommendations Section */}
+        {showRecommendations && (
+          <div className="mb-8">
+            <Card>
+              <CardContent className="p-6">
+                <div className="flex items-center mb-4">
+                  <div className="w-6 h-6 bg-gradient-to-r from-purple-500 to-pink-500 rounded mr-3 flex items-center justify-center">
+                    <i className="fas fa-sparkles text-white text-sm"></i>
+                  </div>
+                  <h2 className="text-xl font-semibold text-foreground">
+                    Personalized Goal Recommendations
+                  </h2>
+                </div>
+                
+                {recommendationsLoading ? (
+                  <div className="flex items-center justify-center py-8">
+                    <div className="w-6 h-6 border-2 border-primary border-t-transparent rounded-full animate-spin"></div>
+                    <span className="ml-2 text-muted-foreground">Loading recommendations...</span>
+                  </div>
+                ) : recommendations && recommendations.length > 0 ? (
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    {recommendations.slice(0, 8).map((rec) => (
+                      <div
+                        key={rec.goalId}
+                        className="p-4 bg-accent bg-opacity-30 rounded-lg border border-accent hover:border-primary transition-colors"
+                      >
+                        <div className="flex justify-between items-start mb-2">
+                          <div className="flex items-center">
+                            <div className={`w-4 h-4 category-${rec.goal.category.color} rounded mr-2 flex items-center justify-center`}>
+                              <i className={`${getCategoryIcon(rec.goal.category.name)} text-white text-xs`}></i>
+                            </div>
+                            <span className="text-xs font-medium text-muted-foreground">
+                              {rec.goal.category.name}
+                            </span>
+                          </div>
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            onClick={() => handleSelectRecommendation(rec)}
+                            disabled={
+                              (selectedGoals[rec.goal.category.id] || []).length >= 2 ||
+                              (selectedGoals[rec.goal.category.id] || []).includes(rec.goalId)
+                            }
+                            data-testid={`button-select-recommendation-${rec.goalId}`}
+                          >
+                            <i className="fas fa-plus mr-1 text-xs"></i>
+                            Select
+                          </Button>
+                        </div>
+                        <p className="text-sm text-foreground mb-2">
+                          {rec.goal.description}
+                        </p>
+                        <div className="flex items-center">
+                          <i className="fas fa-info-circle text-xs text-primary mr-1"></i>
+                          <span className="text-xs text-muted-foreground">
+                            {rec.reason}
+                          </span>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                ) : (
+                  <div className="text-center py-8">
+                    <i className="fas fa-lightbulb text-4xl text-muted-foreground mb-4"></i>
+                    <p className="text-muted-foreground">
+                      Complete a few goals to get personalized recommendations!
+                    </p>
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+          </div>
+        )}
 
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
           {categories.map((category, categoryIndex) => {

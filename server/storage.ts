@@ -25,7 +25,7 @@ import {
   type InsertSharedAchievement,
 } from "@shared/schema";
 import { db } from "./db";
-import { eq, and, or, gte, lte, desc, asc } from "drizzle-orm";
+import { eq, and, or, gte, lte, desc, asc, sql, count } from "drizzle-orm";
 
 // Interface for storage operations
 export interface IStorage {
@@ -91,6 +91,14 @@ export interface IStorage {
   getActivityFeed(userId: string): Promise<(ActivityFeed & { user: User })[]>;
   shareAchievement(share: InsertSharedAchievement): Promise<SharedAchievement>;
   getSharedAchievements(userId: string): Promise<(SharedAchievement & { user: User; achievement: Achievement })[]>;
+  
+  // Recommendation operations
+  getGoalRecommendations(userId: string, categoryId?: string): Promise<{
+    goalId: string;
+    goal: Goal & { category: Category };
+    score: number;
+    reason: string;
+  }[]>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -718,6 +726,157 @@ export class DatabaseStorage implements IStorage {
       .orderBy(desc(sharedAchievements.createdAt));
 
     return result as (SharedAchievement & { user: User; achievement: Achievement })[];
+  }
+
+  async getGoalRecommendations(userId: string, categoryId?: string): Promise<{
+    goalId: string;
+    goal: Goal & { category: Category };
+    score: number;
+    reason: string;
+  }[]> {
+    // Build where conditions safely
+    const whereConditions = [
+      or(
+        eq(goals.isCustom, false), // System goals
+        eq(goals.createdBy, userId) // User's custom goals
+      )
+    ];
+    
+    if (categoryId) {
+      whereConditions.push(eq(goals.categoryId, categoryId));
+    }
+
+    // Get all available goals with categories
+    const allGoalsQuery = db
+      .select({
+        goal: goals,
+        category: categories,
+      })
+      .from(goals)
+      .innerJoin(categories, eq(goals.categoryId, categories.id))
+      .where(and(...whereConditions));
+
+    const allGoals = await allGoalsQuery;
+
+    // Get user's goal completion history
+    const userHistory = await db
+      .select({
+        goalId: userGoals.goalId,
+        categoryId: goals.categoryId,
+        completed: userGoals.completed,
+        weekStart: userGoals.weekStart,
+      })
+      .from(userGoals)
+      .innerJoin(goals, eq(userGoals.goalId, goals.id))
+      .where(eq(userGoals.userId, userId))
+      .orderBy(desc(userGoals.weekStart));
+
+    // Get global goal popularity (completion rates)
+    const goalPopularity = await db
+      .select({
+        goalId: userGoals.goalId,
+        totalAttempts: sql<number>`count(*)`.as('totalAttempts'),
+        completions: sql<number>`sum(case when ${userGoals.completed} = true then 1 else 0 end)`.as('completions'),
+      })
+      .from(userGoals)
+      .groupBy(userGoals.goalId);
+
+    // Calculate recommendations with scoring
+    const recommendations = allGoals.map(({ goal, category }) => {
+      let score = 0;
+      let reasons: string[] = [];
+
+      // Factor 1: User's completion history for this specific goal
+      const userGoalHistory = userHistory.filter(h => h.goalId === goal.id);
+      const userCompletions = userGoalHistory.filter(h => h.completed).length;
+      const userAttempts = userGoalHistory.length;
+
+      if (userAttempts === 0) {
+        // New goal - boost score for exploration
+        score += 20;
+        reasons.push("New goal to explore");
+      } else if (userCompletions > 0) {
+        // User has completed this goal before - moderate boost
+        const successRate = userCompletions / userAttempts;
+        score += successRate * 15;
+        if (successRate >= 0.8) {
+          reasons.push("You've had great success with this goal");
+        } else if (successRate >= 0.5) {
+          reasons.push("You've completed this goal before");
+        }
+      } else {
+        // User has tried but never completed - slight penalty
+        score -= 5;
+        reasons.push("Consider trying again with a fresh approach");
+      }
+
+      // Factor 2: User's category performance
+      const categoryHistory = userHistory.filter(h => h.categoryId === goal.categoryId);
+      const categoryCompletions = categoryHistory.filter(h => h.completed).length;
+      const categoryAttempts = categoryHistory.length;
+
+      if (categoryAttempts > 0) {
+        const categorySuccessRate = categoryCompletions / categoryAttempts;
+        score += categorySuccessRate * 10;
+        if (categorySuccessRate >= 0.7) {
+          reasons.push(`Strong performance in ${category.name} category`);
+        } else if (categorySuccessRate >= 0.4) {
+          reasons.push(`Good track record in ${category.name}`);
+        }
+      }
+
+      // Factor 3: Recent category activity
+      const recentCategoryActivity = categoryHistory.filter(h => {
+        const weeksDiff = (new Date().getTime() - new Date(h.weekStart).getTime()) / (1000 * 60 * 60 * 24 * 7);
+        return weeksDiff <= 4; // Last 4 weeks
+      });
+      
+      if (recentCategoryActivity.length > 0) {
+        score += 5;
+        reasons.push(`Recent activity in ${category.name}`);
+      }
+
+      // Factor 4: Global popularity
+      const popularity = goalPopularity.find(p => p.goalId === goal.id);
+      if (popularity && popularity.totalAttempts > 0) {
+        const globalSuccessRate = popularity.completions / popularity.totalAttempts;
+        score += globalSuccessRate * 8;
+        if (globalSuccessRate >= 0.6) {
+          reasons.push("Popular goal with high success rate");
+        }
+      }
+
+      // Factor 5: Custom goal bonus
+      if (goal.isCustom && goal.createdBy === userId) {
+        score += 5;
+        reasons.push("Your personal custom goal");
+      }
+
+      // Factor 6: Diversity bonus - encourage trying different categories
+      const userCategoryDistribution = Array.from(
+        new Set(userHistory.map(h => h.categoryId))
+      );
+      if (userCategoryDistribution.length > 0) {
+        const categoryFrequency = userHistory.filter(h => h.categoryId === goal.categoryId).length;
+        const averageFrequency = userHistory.length / userCategoryDistribution.length;
+        if (categoryFrequency < averageFrequency) {
+          score += 3;
+          reasons.push("Explore different areas of growth");
+        }
+      }
+
+      return {
+        goalId: goal.id,
+        goal: { ...goal, category } as Goal & { category: Category },
+        score: Math.max(0, score), // Ensure non-negative score
+        reason: reasons.length > 0 ? reasons.join(" • ") : "Recommended for you", // Join multiple reasons
+      };
+    });
+
+    // Sort by score and return top recommendations
+    return recommendations
+      .sort((a, b) => b.score - a.score)
+      .slice(0, categoryId ? 6 : 12); // Return 6 per category or 12 total
   }
 }
 

@@ -255,6 +255,22 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Goal recommendations endpoint
+  app.get('/api/goals/recommendations', isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user!.id;
+      const { categoryId } = req.query;
+      const recommendations = await storage.getGoalRecommendations(
+        userId,
+        categoryId as string | undefined
+      );
+      res.json(recommendations);
+    } catch (error) {
+      console.error("Error fetching goal recommendations:", error);
+      res.status(500).json({ message: "Failed to fetch recommendations" });
+    }
+  });
+
   // User goal routes
   app.get('/api/user/goals/week', isAuthenticated, async (req: any, res) => {
     try {
