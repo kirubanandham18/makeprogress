@@ -317,14 +317,19 @@ export default function Dashboard() {
                   .sort((a, b) => new Date(b.completedAt || 0).getTime() - new Date(a.completedAt || 0).getTime())
                   .slice(0, 5)
                   .map((userGoal) => (
-                    <div key={userGoal.id} className="flex items-center space-x-4">
-                      <div className="w-8 h-8 bg-accent rounded-full flex items-center justify-center flex-shrink-0">
-                        <i className="fas fa-check text-white text-xs"></i>
+                    <div key={userGoal.id} className="flex items-center space-x-4 group hover:bg-muted/50 rounded-lg p-2 -m-2 transition-colors">
+                      <div className="w-10 h-10 bg-gradient-to-br from-yellow-400 to-orange-500 rounded-full flex items-center justify-center flex-shrink-0 shadow-lg group-hover:scale-110 transition-transform duration-300">
+                        <i className="fas fa-birthday-cake text-white text-sm animate-pulse"></i>
                       </div>
                       <div className="flex-1">
-                        <p className="text-sm font-medium text-foreground">
-                          Completed "{userGoal.goal.description}"
-                        </p>
+                        <div className="flex items-center space-x-2">
+                          <p className="text-sm font-medium text-foreground">
+                            🎉 Completed "{userGoal.goal.description}"
+                          </p>
+                          <span className="text-xs bg-gradient-to-r from-pink-500 to-purple-500 text-white px-2 py-1 rounded-full font-bold animate-bounce">
+                            NICE!
+                          </span>
+                        </div>
                         <p className="text-xs text-muted-foreground">
                           {userGoal.goal.category.name} • {
                             userGoal.completedAt 
