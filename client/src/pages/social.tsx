@@ -201,7 +201,7 @@ export default function Social() {
 
   const getLevelColor = (level: string) => {
     switch (level) {
-      case "slayed": return "bg-green-500";
+      case "slayed": return "success-gradient";
       case "rock": return "bg-yellow-500";
       case "track": return "bg-purple-500";
       default: return "bg-gray-500";
@@ -270,7 +270,7 @@ export default function Social() {
                   <p className="text-sm text-muted-foreground">Shared Achievements</p>
                   <p className="text-2xl font-bold text-foreground">{sharedAchievements?.length || 0}</p>
                 </div>
-                <Award className="h-8 w-8 text-green-500" />
+                <Award className="h-8 w-8 text-emerald-500" />
               </div>
             </CardContent>
           </Card>

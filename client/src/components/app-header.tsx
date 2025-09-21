@@ -86,7 +86,7 @@ export default function AppHeader({ user }: AppHeaderProps) {
   };
 
   return (
-    <header className="bg-card border-b border-border shadow-sm sticky top-0 z-50">
+    <header className="bg-gradient-to-r from-violet-50 to-purple-50 dark:from-violet-900/20 dark:to-purple-900/20 border-b border-border shadow-lg backdrop-blur-sm sticky top-0 z-50">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex justify-between items-center h-16">
           <div className="flex items-center space-x-3">
@@ -98,7 +98,7 @@ export default function AppHeader({ user }: AppHeaderProps) {
               data-testid="image-logo"
             />
             <h1 
-              className="text-xl font-bold text-foreground cursor-pointer hover:opacity-80"
+              className="text-xl font-bold gradient-text cursor-pointer hover:opacity-80"
               onClick={() => setLocation("/")}
               data-testid="link-home"
             >

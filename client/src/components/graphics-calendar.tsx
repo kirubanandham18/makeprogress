@@ -144,9 +144,9 @@ export default function GraphicsCalendar({ userGoals, onToggleGoal }: GraphicsCa
                 <div className="text-xs">
                   <div className={`w-2 h-2 rounded-full mx-auto ${
                     completedCount === dayGoals.length && dayGoals.length > 0
-                      ? 'bg-green-500' 
+                      ? 'success-gradient shadow-lg' 
                       : completedCount > 0 
-                        ? 'bg-yellow-500'
+                        ? 'bg-gradient-to-r from-amber-400 to-yellow-500 shadow-md'
                         : 'bg-gray-300'
                   }`} title={`${completedCount}/${dayGoals.length} goals completed`}></div>
                 </div>
@@ -164,10 +164,10 @@ export default function GraphicsCalendar({ userGoals, onToggleGoal }: GraphicsCa
             {userGoals.map((userGoal) => (
               <div
                 key={userGoal.id}
-                className={`p-3 rounded-lg border ${
+                className={`p-3 rounded-lg border transition-all duration-300 ${
                   userGoal.completed 
-                    ? 'bg-green-50 dark:bg-green-900/20 border-green-200 dark:border-green-800' 
-                    : 'bg-card border-border hover:bg-muted'
+                    ? 'bg-gradient-to-r from-emerald-50 to-teal-50 dark:from-emerald-900/20 dark:to-teal-900/20 border-emerald-200 dark:border-emerald-700 shadow-md' 
+                    : 'bg-card border-border hover:bg-gradient-to-r hover:from-violet-50 hover:to-purple-50 dark:hover:from-violet-900/20 dark:hover:to-purple-900/20 hover:border-violet-200 dark:hover:border-violet-700 hover:shadow-lg'
                 }`}
                 data-testid={`goal-card-${userGoal.id}`}
               >
@@ -195,8 +195,8 @@ export default function GraphicsCalendar({ userGoals, onToggleGoal }: GraphicsCa
                     onClick={() => onToggleGoal(userGoal.id)}
                     className={`w-6 h-6 rounded-full border-2 flex items-center justify-center transition-all ${
                       userGoal.completed
-                        ? 'bg-green-500 border-green-500 text-white'
-                        : 'border-gray-300 hover:border-gray-400'
+                        ? 'success-gradient border-emerald-400 text-white shadow-lg'
+                        : 'border-gray-300 hover:border-violet-400 hover:bg-violet-50 dark:hover:bg-violet-900/20'
                     }`}
                     data-testid={`button-toggle-goal-${userGoal.id}`}
                   >
@@ -204,8 +204,8 @@ export default function GraphicsCalendar({ userGoals, onToggleGoal }: GraphicsCa
                   </button>
                 </div>
                 {userGoal.completed && userGoal.completedAt && (
-                  <div className="text-xs text-green-600 dark:text-green-400 mt-2">
-                    ✅ Completed at {format(new Date(userGoal.completedAt), "HH:mm")}
+                  <div className="text-xs text-emerald-600 dark:text-emerald-400 mt-2 font-medium">
+                    ✨ Completed at {format(new Date(userGoal.completedAt), "HH:mm")}
                   </div>
                 )}
               </div>

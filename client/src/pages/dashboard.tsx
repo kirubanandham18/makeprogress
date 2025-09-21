@@ -257,7 +257,7 @@ export default function Dashboard() {
               <Button 
                 onClick={() => setLocation("/social")}
                 variant="outline"
-                className="border-green-500 text-green-600 hover:bg-green-500 hover:text-white"
+                className="success-gradient text-white hover:opacity-90 border-0"
                 data-testid="button-social"
               >
                 <i className="fas fa-users mr-2"></i>Social
@@ -265,14 +265,14 @@ export default function Dashboard() {
               <Button 
                 onClick={() => setLocation("/analytics")}
                 variant="outline"
-                className="border-primary text-primary hover:bg-primary hover:text-primary-foreground"
+                className="button-gradient text-white border-0 hover:opacity-90"
                 data-testid="button-analytics"
               >
                 <i className="fas fa-chart-line mr-2"></i>Analytics
               </Button>
               <Button 
                 onClick={handleSelectGoals}
-                className="bg-primary text-primary-foreground hover:opacity-90"
+                className="button-gradient text-white border-0 hover:opacity-90"
                 data-testid="button-select-goals"
               >
                 <i className="fas fa-plus mr-2"></i>Select This Week's Goals

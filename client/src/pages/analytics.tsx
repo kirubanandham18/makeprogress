@@ -115,7 +115,7 @@ export default function Analytics() {
                       {summaryStats.averageCompletion.toFixed(1)}%
                     </p>
                   </div>
-                  <TrendingUp className="h-8 w-8 text-green-500" />
+                  <TrendingUp className="h-8 w-8 text-emerald-500" />
                 </div>
               </CardContent>
             </Card>
