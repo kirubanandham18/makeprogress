@@ -109,17 +109,35 @@ export default function AppHeader({ user }: AppHeaderProps) {
           <nav className="hidden md:flex items-center space-x-6">
             <button
               onClick={() => setLocation("/")}
-              className={`${location === "/" ? "text-primary font-medium" : "text-muted-foreground hover:text-foreground"} transition-colors`}
+              className={`flex items-center space-x-2 ${location === "/" ? "text-primary font-medium" : "text-muted-foreground hover:text-foreground"} transition-colors`}
               data-testid="link-dashboard"
             >
-              Dashboard
+              <i className="fas fa-tachometer-alt"></i>
+              <span>Dashboard</span>
             </button>
             <button
               onClick={() => setLocation("/goals")}
-              className={`${location === "/goals" ? "text-primary font-medium" : "text-muted-foreground hover:text-foreground"} transition-colors`}
+              className={`flex items-center space-x-2 ${location === "/goals" ? "text-primary font-medium" : "text-muted-foreground hover:text-foreground"} transition-colors`}
               data-testid="link-goals"
             >
-              Goals
+              <i className="fas fa-bullseye"></i>
+              <span>Goals</span>
+            </button>
+            <button
+              onClick={() => setLocation("/analytics")}
+              className={`flex items-center space-x-2 ${location === "/analytics" ? "text-primary font-medium" : "text-muted-foreground hover:text-foreground"} transition-colors`}
+              data-testid="link-analytics"
+            >
+              <i className="fas fa-chart-line"></i>
+              <span>Analytics</span>
+            </button>
+            <button
+              onClick={() => setLocation("/social")}
+              className={`flex items-center space-x-2 ${location === "/social" ? "text-primary font-medium" : "text-muted-foreground hover:text-foreground"} transition-colors`}
+              data-testid="link-social"
+            >
+              <i className="fas fa-users"></i>
+              <span>Social</span>
             </button>
           </nav>
           

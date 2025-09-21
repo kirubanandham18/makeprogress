@@ -25,9 +25,10 @@ interface CategoryCardProps {
   };
   goals: CategoryGoal[];
   onToggleGoal: (userGoalId: string) => void;
+  onCategoryClick?: () => void;
 }
 
-export default function CategoryCard({ category, goals, onToggleGoal }: CategoryCardProps) {
+export default function CategoryCard({ category, goals, onToggleGoal, onCategoryClick }: CategoryCardProps) {
   const getCategoryIcon = (categoryName: string) => {
     const iconMap: Record<string, string> = {
       'Personal': personalIcon,
@@ -52,13 +53,32 @@ export default function CategoryCard({ category, goals, onToggleGoal }: Category
   };
 
   return (
-    <Card className="hover-lift cursor-pointer">
-      <div className={`category-${category.color} h-24 rounded-t-xl flex items-center justify-center`}>
-        <img 
-          src={getCategoryIcon(category.name)} 
-          alt={`${category.name} icon`}
-          className="w-8 h-8 object-contain"
-        />
+    <Card 
+      className="hover-lift cursor-pointer transition-all duration-300 hover:shadow-xl border-2 hover:border-primary/20 group focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2"
+      onClick={onCategoryClick}
+      onKeyDown={(e) => {
+        if (e.key === 'Enter' || e.key === ' ') {
+          e.preventDefault();
+          onCategoryClick?.();
+        }
+      }}
+      role="button"
+      tabIndex={0}
+      data-testid={`card-category-${category.name.toLowerCase().replace(' ', '-')}`}
+    >
+      <div className={`category-${category.color} h-32 rounded-t-xl flex items-center justify-center relative group-hover:scale-105 transition-transform duration-300`}>
+        <div className="w-16 h-16 rounded-full bg-white/20 backdrop-blur-sm border-2 border-white/30 flex items-center justify-center shadow-lg group-hover:bg-white/30 transition-all duration-300">
+          <img 
+            src={getCategoryIcon(category.name)} 
+            alt={`${category.name} icon`}
+            className="w-10 h-10 object-contain rounded-full group-hover:scale-110 transition-transform duration-300"
+          />
+        </div>
+        <div className="absolute bottom-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity duration-300">
+          <div className="w-6 h-6 rounded-full bg-white/20 backdrop-blur-sm flex items-center justify-center">
+            <i className="fas fa-arrow-right text-white text-xs"></i>
+          </div>
+        </div>
       </div>
       <CardContent className="p-4">
         <h3 className="font-semibold text-foreground mb-2">{category.name}</h3>
@@ -77,7 +97,12 @@ export default function CategoryCard({ category, goals, onToggleGoal }: Category
                 variant="ghost"
                 size="sm"
                 className="p-0 h-auto text-xs"
-                onClick={() => onToggleGoal(userGoal.id)}
+                onClick={(e) => {
+                  e.stopPropagation();
+                  onToggleGoal(userGoal.id);
+                }}
+                aria-label={`Mark goal ${userGoal.completed ? 'incomplete' : 'complete'}: ${userGoal.goal.description}`}
+                aria-pressed={userGoal.completed}
                 data-testid={`button-toggle-goal-${userGoal.id}`}
               >
                 <i 
@@ -105,8 +130,11 @@ export default function CategoryCard({ category, goals, onToggleGoal }: Category
             <div className="text-center py-4">
               <p className="text-muted-foreground text-sm">No goals selected</p>
               <p className="text-xs text-muted-foreground mt-1">
-                Select goals for this week to get started
+                Click to select goals for this week
               </p>
+              <div className="mt-2">
+                <i className="fas fa-hand-pointer text-primary/60 text-lg animate-pulse"></i>
+              </div>
             </div>
           )}
         </div>

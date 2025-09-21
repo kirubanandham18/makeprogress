@@ -255,12 +255,11 @@ export default function Dashboard() {
             <h2 className="text-xl font-bold text-foreground">Goal Categories</h2>
             <div className="flex gap-3">
               <Button 
-                onClick={() => setLocation("/social")}
-                variant="outline"
-                className="success-gradient text-white hover:opacity-90 border-0"
-                data-testid="button-social"
+                onClick={handleSelectGoals}
+                className="button-gradient text-white border-0 hover:opacity-90 px-6 py-2"
+                data-testid="button-select-goals"
               >
-                <i className="fas fa-users mr-2"></i>Social
+                <i className="fas fa-plus mr-2"></i>Select This Week's Goals
               </Button>
               <Button 
                 onClick={() => setLocation("/analytics")}
@@ -271,11 +270,12 @@ export default function Dashboard() {
                 <i className="fas fa-chart-line mr-2"></i>Analytics
               </Button>
               <Button 
-                onClick={handleSelectGoals}
-                className="button-gradient text-white border-0 hover:opacity-90"
-                data-testid="button-select-goals"
+                onClick={() => setLocation("/social")}
+                variant="outline"
+                className="success-gradient text-white hover:opacity-90 border-0"
+                data-testid="button-social"
               >
-                <i className="fas fa-plus mr-2"></i>Select This Week's Goals
+                <i className="fas fa-users mr-2"></i>Social
               </Button>
             </div>
           </div>
@@ -297,7 +297,7 @@ export default function Dashboard() {
                   }}
                   goals={categoryGoals}
                   onToggleGoal={handleToggleGoal}
-                  data-testid={`card-category-${category.name.toLowerCase().replace(' ', '-')}`}
+                  onCategoryClick={handleSelectGoals}
                 />
               );
             })}
