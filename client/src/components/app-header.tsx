@@ -10,6 +10,7 @@ import { useLocation } from "wouter";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest, removeStoredToken } from "@/lib/queryClient";
+import goalFlowIcon from "@/assets/goalflow-icon.png";
 
 interface User {
   id: string;
@@ -89,9 +90,13 @@ export default function AppHeader({ user }: AppHeaderProps) {
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex justify-between items-center h-16">
           <div className="flex items-center space-x-3">
-            <div className="w-8 h-8 gradient-bg rounded-lg flex items-center justify-center">
-              <i className="fas fa-bullseye text-white text-sm"></i>
-            </div>
+            <img 
+              src={goalFlowIcon} 
+              alt="GoalFlow Icon" 
+              className="w-8 h-8 cursor-pointer hover:opacity-80 transition-opacity"
+              onClick={() => setLocation("/")}
+              data-testid="image-logo"
+            />
             <h1 
               className="text-xl font-bold text-foreground cursor-pointer hover:opacity-80"
               onClick={() => setLocation("/")}
