@@ -352,9 +352,10 @@ export default function GoalSelection() {
                               (selectedGoals[rec.goal.category.id] || []).length >= 2 ||
                               (selectedGoals[rec.goal.category.id] || []).includes(rec.goalId)
                             }
+                            className="min-h-[44px] md:min-h-[32px] px-4 md:px-3 text-sm md:text-xs touch-manipulation"
                             data-testid={`button-select-recommendation-${rec.goalId}`}
                           >
-                            <i className="fas fa-plus mr-1 text-xs"></i>
+                            <i className="fas fa-plus mr-1 text-sm md:text-xs"></i>
                             Select
                           </Button>
                         </div>
@@ -421,15 +422,31 @@ export default function GoalSelection() {
                       const isDisabled = !isSelected && selectedInCategory.length >= 2;
                       
                       return (
-                        <label 
+                        <div
                           key={goal.id}
-                          className={`flex items-center space-x-3 p-3 rounded-lg cursor-pointer transition-colors ${
+                          className={`flex items-center space-x-3 p-4 md:p-3 rounded-lg cursor-pointer transition-colors touch-manipulation ${
                             isSelected 
                               ? 'bg-muted border border-primary' 
                               : isDisabled
                               ? 'bg-background opacity-50 cursor-not-allowed'
-                              : 'bg-background hover:bg-accent hover:bg-opacity-10'
+                              : 'bg-background hover:bg-accent hover:bg-opacity-10 active:bg-accent active:bg-opacity-20'
                           }`}
+                          onClick={() => {
+                            if (!isDisabled) {
+                              handleGoalToggle(category.id, goal.id, !isSelected);
+                            }
+                          }}
+                          role="button"
+                          tabIndex={0}
+                          onKeyDown={(e) => {
+                            if ((e.key === 'Enter' || e.key === ' ') && !isDisabled) {
+                              e.preventDefault();
+                              handleGoalToggle(category.id, goal.id, !isSelected);
+                            }
+                          }}
+                          aria-pressed={isSelected}
+                          aria-disabled={isDisabled}
+                          data-testid={`goal-item-${goal.id}`}
                         >
                           <Checkbox
                             checked={isSelected}
@@ -438,11 +455,12 @@ export default function GoalSelection() {
                               handleGoalToggle(category.id, goal.id, checked as boolean)
                             }
                             data-testid={`checkbox-goal-${goal.id}`}
+                            className="pointer-events-none"
                           />
-                          <span className={`text-sm ${isSelected ? 'text-foreground font-medium' : 'text-muted-foreground'}`}>
+                          <span className={`text-sm md:text-sm flex-1 ${isSelected ? 'text-foreground font-medium' : 'text-muted-foreground'}`}>
                             {goal.description}
                           </span>
-                        </label>
+                        </div>
                       );
                     })}
                   </div>

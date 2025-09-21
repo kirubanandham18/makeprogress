@@ -1,0 +1,85 @@
+{
+  "name": "makeprogress - Personal Development Goal Tracker",
+  "short_name": "makeprogress",
+  "description": "Track your weekly personal development goals across six life categories: Personal, Inner Peace, Health, Family, Career, and Fun.",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#ffffff",
+  "theme_color": "#8b5cf6",
+  "orientation": "portrait-primary",
+  "scope": "/",
+  "icons": [
+    {
+      "src": "/assets/goalflow-icon.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "/assets/goalflow-icon.png", 
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/assets/goalflow-icon.png",
+      "sizes": "144x144", 
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/assets/goalflow-icon.png",
+      "sizes": "96x96",
+      "type": "image/png", 
+      "purpose": "any"
+    },
+    {
+      "src": "/assets/goalflow-icon.png",
+      "sizes": "72x72",
+      "type": "image/png",
+      "purpose": "any"
+    }
+  ],
+  "categories": ["productivity", "lifestyle", "health"],
+  "lang": "en",
+  "dir": "ltr",
+  "prefer_related_applications": false,
+  "shortcuts": [
+    {
+      "name": "Dashboard",
+      "short_name": "Dashboard", 
+      "description": "View your goal progress dashboard",
+      "url": "/",
+      "icons": [
+        {
+          "src": "/assets/goalflow-icon.png",
+          "sizes": "96x96"
+        }
+      ]
+    },
+    {
+      "name": "Select Goals",
+      "short_name": "Goals",
+      "description": "Choose your weekly goals",
+      "url": "/goals", 
+      "icons": [
+        {
+          "src": "/assets/goalflow-icon.png",
+          "sizes": "96x96"
+        }
+      ]
+    },
+    {
+      "name": "Analytics",
+      "short_name": "Analytics",
+      "description": "View your progress analytics",
+      "url": "/analytics",
+      "icons": [
+        {
+          "src": "/assets/goalflow-icon.png", 
+          "sizes": "96x96"
+        }
+      ]
+    }
+  ]
+}
