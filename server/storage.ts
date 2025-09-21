@@ -44,6 +44,31 @@ export interface IStorage {
   getWeeklyAchievement(userId: string, weekStart: Date): Promise<Achievement | undefined>;
   createAchievement(achievement: InsertAchievement): Promise<Achievement>;
   getUserAchievements(userId: string): Promise<Achievement[]>;
+  
+  // Analytics operations
+  getWeeklyCompletionStats(userId: string, startDate: Date, endDate: Date): Promise<{
+    week: string;
+    totalGoals: number;
+    completedGoals: number;
+    completionRate: number;
+    categoriesCompleted: number;
+  }[]>;
+  getCategoryPerformance(userId: string, startDate: Date, endDate: Date): Promise<{
+    categoryId: string;
+    categoryName: string;
+    totalGoals: number;
+    completedGoals: number;
+    completionRate: number;
+  }[]>;
+  getGoalCompletionTrends(userId: string, startDate: Date, endDate: Date): Promise<{
+    date: string;
+    completedCount: number;
+  }[]>;
+  getAchievementProgression(userId: string): Promise<{
+    week: string;
+    level: string;
+    categoriesCompleted: number;
+  }[]>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -249,6 +274,178 @@ export class DatabaseStorage implements IStorage {
       .from(achievements)
       .where(eq(achievements.userId, userId))
       .orderBy(desc(achievements.weekStart));
+  }
+
+  // Analytics operations
+  async getWeeklyCompletionStats(userId: string, startDate: Date, endDate: Date): Promise<{
+    week: string;
+    totalGoals: number;
+    completedGoals: number;
+    completionRate: number;
+    categoriesCompleted: number;
+  }[]> {
+    const result = await db
+      .select({
+        weekStart: userGoals.weekStart,
+        goalId: userGoals.goalId,
+        completed: userGoals.completed,
+        categoryId: goals.categoryId,
+      })
+      .from(userGoals)
+      .innerJoin(goals, eq(userGoals.goalId, goals.id))
+      .where(
+        and(
+          eq(userGoals.userId, userId),
+          gte(userGoals.weekStart, startDate),
+          lte(userGoals.weekStart, endDate)
+        )
+      );
+
+    // Process the results to calculate weekly stats
+    const weeklyStats = new Map<string, {
+      totalGoals: number;
+      completedGoals: number;
+      categoriesWithCompletedGoals: Set<string>;
+    }>();
+
+    result.forEach(row => {
+      const weekKey = row.weekStart.toISOString().split('T')[0];
+      if (!weeklyStats.has(weekKey)) {
+        weeklyStats.set(weekKey, {
+          totalGoals: 0,
+          completedGoals: 0,
+          categoriesWithCompletedGoals: new Set(),
+        });
+      }
+      const stats = weeklyStats.get(weekKey)!;
+      stats.totalGoals += 1;
+      if (row.completed) {
+        stats.completedGoals += 1;
+        stats.categoriesWithCompletedGoals.add(row.categoryId);
+      }
+    });
+
+    return Array.from(weeklyStats.entries()).map(([week, stats]) => ({
+      week,
+      totalGoals: stats.totalGoals,
+      completedGoals: stats.completedGoals,
+      completionRate: stats.totalGoals > 0 ? (stats.completedGoals / stats.totalGoals) * 100 : 0,
+      categoriesCompleted: stats.categoriesWithCompletedGoals.size,
+    })).sort((a, b) => a.week.localeCompare(b.week));
+  }
+
+  async getCategoryPerformance(userId: string, startDate: Date, endDate: Date): Promise<{
+    categoryId: string;
+    categoryName: string;
+    totalGoals: number;
+    completedGoals: number;
+    completionRate: number;
+  }[]> {
+    const result = await db
+      .select({
+        categoryId: categories.id,
+        categoryName: categories.name,
+        goalId: userGoals.goalId,
+        completed: userGoals.completed,
+      })
+      .from(userGoals)
+      .innerJoin(goals, eq(userGoals.goalId, goals.id))
+      .innerJoin(categories, eq(goals.categoryId, categories.id))
+      .where(
+        and(
+          eq(userGoals.userId, userId),
+          gte(userGoals.weekStart, startDate),
+          lte(userGoals.weekStart, endDate)
+        )
+      );
+
+    // Process results to calculate category performance
+    const categoryStats = new Map<string, {
+      categoryId: string;
+      categoryName: string;
+      totalGoals: number;
+      completedGoals: number;
+    }>();
+
+    result.forEach(row => {
+      const key = row.categoryId;
+      if (!categoryStats.has(key)) {
+        categoryStats.set(key, {
+          categoryId: row.categoryId,
+          categoryName: row.categoryName,
+          totalGoals: 0,
+          completedGoals: 0,
+        });
+      }
+      const stats = categoryStats.get(key)!;
+      stats.totalGoals += 1;
+      if (row.completed) {
+        stats.completedGoals += 1;
+      }
+    });
+
+    return Array.from(categoryStats.values()).map(stats => ({
+      categoryId: stats.categoryId,
+      categoryName: stats.categoryName,
+      totalGoals: stats.totalGoals,
+      completedGoals: stats.completedGoals,
+      completionRate: stats.totalGoals > 0 ? (stats.completedGoals / stats.totalGoals) * 100 : 0,
+    }));
+  }
+
+  async getGoalCompletionTrends(userId: string, startDate: Date, endDate: Date): Promise<{
+    date: string;
+    completedCount: number;
+  }[]> {
+    const result = await db
+      .select({
+        completedAt: userGoals.completedAt,
+      })
+      .from(userGoals)
+      .where(
+        and(
+          eq(userGoals.userId, userId),
+          eq(userGoals.completed, true),
+          gte(userGoals.completedAt, startDate),
+          lte(userGoals.completedAt, endDate)
+        )
+      );
+
+    // Group by date
+    const dailyCounts = new Map<string, number>();
+    result.forEach(row => {
+      if (row.completedAt) {
+        const dateKey = row.completedAt.toISOString().split('T')[0];
+        dailyCounts.set(dateKey, (dailyCounts.get(dateKey) || 0) + 1);
+      }
+    });
+
+    return Array.from(dailyCounts.entries()).map(([date, completedCount]) => ({
+      date,
+      completedCount,
+    })).sort((a, b) => a.date.localeCompare(b.date));
+  }
+
+  async getAchievementProgression(userId: string): Promise<{
+    week: string;
+    level: string;
+    categoriesCompleted: number;
+  }[]> {
+    const result = await db
+      .select({
+        weekStart: achievements.weekStart,
+        level: achievements.level,
+        categoriesCompleted: achievements.categoriesCompleted,
+      })
+      .from(achievements)
+      .where(eq(achievements.userId, userId))
+      .orderBy(asc(achievements.weekStart));
+
+    return result.map(row => ({
+      week: row.weekStart.toISOString().split('T')[0],
+      level: row.level,
+      categoriesCompleted: row.categoriesCompleted,
+    }));
   }
 }
 

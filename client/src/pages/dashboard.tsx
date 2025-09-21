@@ -252,13 +252,23 @@ export default function Dashboard() {
         <section className="mb-8">
           <div className="flex justify-between items-center mb-6">
             <h2 className="text-xl font-bold text-foreground">Goal Categories</h2>
-            <Button 
-              onClick={handleSelectGoals}
-              className="bg-primary text-primary-foreground hover:opacity-90"
-              data-testid="button-select-goals"
-            >
-              <i className="fas fa-plus mr-2"></i>Select This Week's Goals
-            </Button>
+            <div className="flex gap-3">
+              <Button 
+                onClick={() => setLocation("/analytics")}
+                variant="outline"
+                className="border-primary text-primary hover:bg-primary hover:text-primary-foreground"
+                data-testid="button-analytics"
+              >
+                <i className="fas fa-chart-line mr-2"></i>Analytics
+              </Button>
+              <Button 
+                onClick={handleSelectGoals}
+                className="bg-primary text-primary-foreground hover:opacity-90"
+                data-testid="button-select-goals"
+              >
+                <i className="fas fa-plus mr-2"></i>Select This Week's Goals
+              </Button>
+            </div>
           </div>
           
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">

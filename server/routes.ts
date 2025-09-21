@@ -302,6 +302,69 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Analytics routes
+  app.get('/api/analytics/weekly-stats', isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.claims.sub;
+      const { weeks = 12 } = req.query; // Default to last 12 weeks
+      
+      const endDate = new Date();
+      const startDate = new Date();
+      startDate.setDate(startDate.getDate() - (parseInt(weeks.toString()) * 7));
+      
+      const stats = await storage.getWeeklyCompletionStats(userId, startDate, endDate);
+      res.json(stats);
+    } catch (error) {
+      console.error("Error fetching weekly stats:", error);
+      res.status(500).json({ message: "Failed to fetch weekly analytics" });
+    }
+  });
+
+  app.get('/api/analytics/category-performance', isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.claims.sub;
+      const { weeks = 12 } = req.query;
+      
+      const endDate = new Date();
+      const startDate = new Date();
+      startDate.setDate(startDate.getDate() - (parseInt(weeks.toString()) * 7));
+      
+      const performance = await storage.getCategoryPerformance(userId, startDate, endDate);
+      res.json(performance);
+    } catch (error) {
+      console.error("Error fetching category performance:", error);
+      res.status(500).json({ message: "Failed to fetch category analytics" });
+    }
+  });
+
+  app.get('/api/analytics/completion-trends', isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.claims.sub;
+      const { days = 30 } = req.query; // Default to last 30 days
+      
+      const endDate = new Date();
+      const startDate = new Date();
+      startDate.setDate(startDate.getDate() - parseInt(days.toString()));
+      
+      const trends = await storage.getGoalCompletionTrends(userId, startDate, endDate);
+      res.json(trends);
+    } catch (error) {
+      console.error("Error fetching completion trends:", error);
+      res.status(500).json({ message: "Failed to fetch completion trends" });
+    }
+  });
+
+  app.get('/api/analytics/achievement-progression', isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.claims.sub;
+      const progression = await storage.getAchievementProgression(userId);
+      res.json(progression);
+    } catch (error) {
+      console.error("Error fetching achievement progression:", error);
+      res.status(500).json({ message: "Failed to fetch achievement progression" });
+    }
+  });
+
   const httpServer = createServer(app);
   return httpServer;
 }
