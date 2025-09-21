@@ -7,16 +7,35 @@ async function throwIfResNotOk(res: Response) {
   }
 }
 
+// Token management
+export function getStoredToken(): string | null {
+  return localStorage.getItem('auth_token');
+}
+
+export function setStoredToken(token: string): void {
+  localStorage.setItem('auth_token', token);
+}
+
+export function removeStoredToken(): void {
+  localStorage.removeItem('auth_token');
+}
+
 export async function apiRequest(
   method: string,
   url: string,
   data?: unknown | undefined,
 ): Promise<Response> {
+  const token = getStoredToken();
+  const headers: Record<string, string> = {
+    ...(data ? { "Content-Type": "application/json" } : {}),
+    ...(token ? { "Authorization": `Bearer ${token}` } : {}),
+  };
+
   const res = await fetch(url, {
     method,
-    headers: data ? { "Content-Type": "application/json" } : {},
+    headers,
     body: data ? JSON.stringify(data) : undefined,
-    credentials: "include",
+    // No credentials needed for pure JWT authentication
   });
 
   await throwIfResNotOk(res);
@@ -29,8 +48,14 @@ export const getQueryFn: <T>(options: {
 }) => QueryFunction<T> =
   ({ on401: unauthorizedBehavior }) =>
   async ({ queryKey }) => {
+    const token = getStoredToken();
+    const headers: Record<string, string> = {
+      ...(token ? { "Authorization": `Bearer ${token}` } : {}),
+    };
+
     const res = await fetch(queryKey.join("/") as string, {
-      credentials: "include",
+      headers,
+      // No credentials needed for pure JWT authentication
     });
 
     if (unauthorizedBehavior === "returnNull" && res.status === 401) {

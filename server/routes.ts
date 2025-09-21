@@ -1,8 +1,8 @@
 import type { Express } from "express";
 import { createServer, type Server } from "http";
 import { storage } from "./storage";
-import { setupAuth, isAuthenticated } from "./replitAuth";
-import { insertUserGoalSchema, selectGoalSchema } from "@shared/schema";
+import { setupAuth, isAuthenticated, registerUser, loginUser, blacklistToken } from "./auth";
+import { insertUserGoalSchema, selectGoalSchema, registerSchema, loginSchema } from "@shared/schema";
 import { z } from "zod";
 
 function getWeekStart(date: Date = new Date()): Date {
@@ -94,15 +94,114 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   await initializeDefaultData();
 
-  // Auth routes
-  app.get('/api/auth/user', isAuthenticated, async (req: any, res) => {
+  // Auth routes with proper validation and security
+  // Registration endpoint
+  app.post('/api/auth/register', async (req, res) => {
     try {
-      const userId = req.user.claims.sub;
+      // Validate input with Zod
+      const validatedData = registerSchema.parse(req.body);
+      const { email, password, firstName, lastName } = validatedData;
+      
+      const { user, token } = await registerUser(email, password, firstName, lastName);
+      
+      res.status(201).json({ 
+        user: { 
+          id: user.id, 
+          email: user.email, 
+          firstName: user.firstName, 
+          lastName: user.lastName,
+          profileImageUrl: user.profileImageUrl,
+          emailVerified: user.emailVerified
+        }, 
+        token 
+      });
+    } catch (error: any) {
+      console.error("Registration error:", error);
+      
+      // Handle Zod validation errors
+      if (error.name === 'ZodError') {
+        return res.status(400).json({ 
+          message: "Validation failed", 
+          errors: error.errors.map((e: any) => e.message)
+        });
+      }
+      
+      res.status(400).json({ message: error.message || "Registration failed" });
+    }
+  });
+  
+  // Login endpoint
+  app.post('/api/auth/login', async (req, res) => {
+    try {
+      // Validate input with Zod
+      const validatedData = loginSchema.parse(req.body);
+      const { email, password } = validatedData;
+      
+      const { user, token } = await loginUser(email, password);
+      
+      res.json({ 
+        user: { 
+          id: user.id, 
+          email: user.email, 
+          firstName: user.firstName, 
+          lastName: user.lastName,
+          profileImageUrl: user.profileImageUrl,
+          emailVerified: user.emailVerified
+        }, 
+        token 
+      });
+    } catch (error: any) {
+      console.error("Login error:", error);
+      
+      // Handle Zod validation errors
+      if (error.name === 'ZodError') {
+        return res.status(400).json({ 
+          message: "Validation failed", 
+          errors: error.errors.map((e: any) => e.message)
+        });
+      }
+      
+      res.status(401).json({ message: error.message || "Login failed" });
+    }
+  });
+  
+  // Get current user endpoint
+  app.get('/api/auth/user', isAuthenticated, async (req, res) => {
+    try {
+      const userId = req.user!.id;
       const user = await storage.getUser(userId);
-      res.json(user);
+      if (!user) {
+        return res.status(404).json({ message: "User not found" });
+      }
+      res.json({
+        id: user.id,
+        email: user.email,
+        firstName: user.firstName,
+        lastName: user.lastName,
+        profileImageUrl: user.profileImageUrl,
+        emailVerified: user.emailVerified
+      });
     } catch (error) {
       console.error("Error fetching user:", error);
       res.status(500).json({ message: "Failed to fetch user" });
+    }
+  });
+  
+  // Logout endpoint with token revocation
+  app.post('/api/auth/logout', isAuthenticated, (req, res) => {
+    try {
+      // Get token from request (set by isAuthenticated middleware)
+      const token = (req as any).token;
+      
+      if (token) {
+        // Blacklist the token to prevent reuse
+        blacklistToken(token);
+      }
+      
+      res.json({ message: "Logged out successfully" });
+    } catch (error) {
+      console.error("Logout error:", error);
+      res.status(500).json({ message: "Logout failed" });
     }
   });
 
@@ -120,7 +219,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.get('/api/categories/:id/goals', isAuthenticated, async (req: any, res) => {
     try {
       const { id } = req.params;
-      const userId = req.user.claims.sub;
+      const userId = req.user!.id;
       const goals = await storage.getGoalsByCategoryAndUser(id, userId);
       res.json(goals);
     } catch (error) {
@@ -132,7 +231,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.post('/api/categories/:id/goals', isAuthenticated, async (req: any, res) => {
     try {
       const { id: categoryId } = req.params;
-      const userId = req.user.claims.sub;
+      const userId = req.user!.id;
       const { description } = req.body;
 
       if (!description || description.trim().length === 0) {
@@ -159,7 +258,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // User goal routes
   app.get('/api/user/goals/week', isAuthenticated, async (req: any, res) => {
     try {
-      const userId = req.user.claims.sub;
+      const userId = req.user!.id;
       const weekStart = getWeekStart();
       const userGoals = await storage.getUserGoalsForWeek(userId, weekStart);
       res.json(userGoals);
@@ -171,7 +270,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.post('/api/user/select-goals', isAuthenticated, async (req: any, res) => {
     try {
-      const userId = req.user.claims.sub;
+      const userId = req.user!.id;
       const { goalIds } = req.body;
       
       if (!Array.isArray(goalIds) || goalIds.length !== 12) {
@@ -190,7 +289,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.patch('/api/user-goals/:id/complete', isAuthenticated, async (req: any, res) => {
     try {
       const { id } = req.params;
-      const userId = req.user.claims.sub;
+      const userId = req.user!.id;
       
       const updatedGoal = await storage.toggleGoalCompletion(id);
       
@@ -240,7 +339,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Progress and achievement routes
   app.get('/api/user/progress', isAuthenticated, async (req: any, res) => {
     try {
-      const userId = req.user.claims.sub;
+      const userId = req.user!.id;
       const weekStart = getWeekStart();
       
       const [userGoals, achievement] = await Promise.all([
@@ -293,7 +392,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.get('/api/user/achievements', isAuthenticated, async (req: any, res) => {
     try {
-      const userId = req.user.claims.sub;
+      const userId = req.user!.id;
       const achievements = await storage.getUserAchievements(userId);
       res.json(achievements);
     } catch (error) {
@@ -305,7 +404,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Analytics routes
   app.get('/api/analytics/weekly-stats', isAuthenticated, async (req: any, res) => {
     try {
-      const userId = req.user.claims.sub;
+      const userId = req.user!.id;
       const { weeks = 12 } = req.query; // Default to last 12 weeks
       
       const endDate = new Date();
@@ -322,7 +421,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.get('/api/analytics/category-performance', isAuthenticated, async (req: any, res) => {
     try {
-      const userId = req.user.claims.sub;
+      const userId = req.user!.id;
       const { weeks = 12 } = req.query;
       
       const endDate = new Date();
@@ -339,7 +438,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.get('/api/analytics/completion-trends', isAuthenticated, async (req: any, res) => {
     try {
-      const userId = req.user.claims.sub;
+      const userId = req.user!.id;
       const { days = 30 } = req.query; // Default to last 30 days
       
       const endDate = new Date();
@@ -356,7 +455,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.get('/api/analytics/achievement-progression', isAuthenticated, async (req: any, res) => {
     try {
-      const userId = req.user.claims.sub;
+      const userId = req.user!.id;
       const progression = await storage.getAchievementProgression(userId);
       res.json(progression);
     } catch (error) {
@@ -368,7 +467,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Social features routes
   app.post('/api/friends/request', isAuthenticated, async (req: any, res) => {
     try {
-      const userId = req.user.claims.sub;
+      const userId = req.user!.id;
       const { email } = req.body;
       
       if (!email) {
@@ -385,7 +484,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.get('/api/friends/requests', isAuthenticated, async (req: any, res) => {
     try {
-      const userId = req.user.claims.sub;
+      const userId = req.user!.id;
       const requests = await storage.getFriendRequests(userId);
       res.json(requests);
     } catch (error) {
@@ -413,7 +512,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.get('/api/friends', isAuthenticated, async (req: any, res) => {
     try {
-      const userId = req.user.claims.sub;
+      const userId = req.user!.id;
       const friends = await storage.getFriends(userId);
       res.json(friends);
     } catch (error) {
@@ -424,7 +523,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.delete('/api/friends/:id', isAuthenticated, async (req: any, res) => {
     try {
-      const userId = req.user.claims.sub;
+      const userId = req.user!.id;
       const { id } = req.params;
       
       await storage.removeFriend(userId, id);
@@ -437,7 +536,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.get('/api/activity-feed', isAuthenticated, async (req: any, res) => {
     try {
-      const userId = req.user.claims.sub;
+      const userId = req.user!.id;
       const activities = await storage.getActivityFeed(userId);
       res.json(activities);
     } catch (error) {
@@ -448,7 +547,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.post('/api/achievements/:id/share', isAuthenticated, async (req: any, res) => {
     try {
-      const userId = req.user.claims.sub;
+      const userId = req.user!.id;
       const { id: achievementId } = req.params;
       const { sharedWith = "friends", message } = req.body;
       
@@ -477,7 +576,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.get('/api/shared-achievements', isAuthenticated, async (req: any, res) => {
     try {
-      const userId = req.user.claims.sub;
+      const userId = req.user!.id;
       const sharedAchievements = await storage.getSharedAchievements(userId);
       res.json(sharedAchievements);
     } catch (error) {

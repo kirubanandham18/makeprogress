@@ -7,6 +7,9 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { useLocation } from "wouter";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { useToast } from "@/hooks/use-toast";
+import { apiRequest, removeStoredToken } from "@/lib/queryClient";
 
 interface User {
   id: string;
@@ -22,9 +25,37 @@ interface AppHeaderProps {
 
 export default function AppHeader({ user }: AppHeaderProps) {
   const [location, setLocation] = useLocation();
+  const { toast } = useToast();
+  const queryClient = useQueryClient();
+
+  // Logout mutation
+  const logoutMutation = useMutation({
+    mutationFn: async () => {
+      await apiRequest("POST", "/api/auth/logout");
+    },
+    onSuccess: () => {
+      removeStoredToken();
+      queryClient.setQueryData(["/api/auth/user"], null);
+      queryClient.invalidateQueries({ queryKey: ["/api/auth/user"] });
+      toast({
+        title: "Signed Out",
+        description: "You have been successfully signed out.",
+      });
+    },
+    onError: (error: any) => {
+      // Even if logout fails on server, clear local token
+      removeStoredToken();
+      queryClient.setQueryData(["/api/auth/user"], null);
+      queryClient.invalidateQueries({ queryKey: ["/api/auth/user"] });
+      toast({
+        title: "Signed Out",
+        description: "You have been signed out.",
+      });
+    },
+  });
 
   const handleLogout = () => {
-    window.location.href = "/api/logout";
+    logoutMutation.mutate();
   };
 
   const getDisplayName = () => {

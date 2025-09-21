@@ -60,17 +60,11 @@ export default function Dashboard() {
 
   useEffect(() => {
     if (!authLoading && !isAuthenticated) {
-      toast({
-        title: "Unauthorized",
-        description: "You are logged out. Logging in again...",
-        variant: "destructive",
-      });
-      setTimeout(() => {
-        window.location.href = "/api/login";
-      }, 500);
+      // User will automatically see the landing page with login form
+      // No need to redirect since App.tsx handles this routing
       return;
     }
-  }, [isAuthenticated, authLoading, toast]);
+  }, [isAuthenticated, authLoading]);
 
   const { data: progress, isLoading: progressLoading } = useQuery<ProgressData>({
     queryKey: ["/api/user/progress"],
@@ -96,13 +90,11 @@ export default function Dashboard() {
     onError: (error) => {
       if (isUnauthorizedError(error)) {
         toast({
-          title: "Unauthorized",
-          description: "You are logged out. Logging in again...",
+          title: "Session Expired",
+          description: "Please sign in again to continue.",
           variant: "destructive",
         });
-        setTimeout(() => {
-          window.location.href = "/api/login";
-        }, 500);
+        // App.tsx will automatically redirect to landing page for unauthenticated users
         return;
       }
       toast({

@@ -26,13 +26,14 @@ export const sessions = pgTable(
 );
 
 // User storage table.
-// (IMPORTANT) This table is mandatory for Replit Auth, don't drop it.
 export const users = pgTable("users", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
-  email: varchar("email").unique(),
+  email: varchar("email").unique().notNull(),
   firstName: varchar("first_name"),
   lastName: varchar("last_name"),
   profileImageUrl: varchar("profile_image_url"),
+  passwordHash: varchar("password_hash"), // For custom authentication
+  emailVerified: boolean("email_verified").default(false),
   createdAt: timestamp("created_at").defaultNow(),
   updatedAt: timestamp("updated_at").defaultNow(),
 });
@@ -238,3 +239,19 @@ export type InsertFriendship = z.infer<typeof insertFriendshipSchema>;
 export type InsertActivityFeed = z.infer<typeof insertActivityFeedSchema>;
 export type InsertSharedAchievement = z.infer<typeof insertSharedAchievementSchema>;
 export type SelectGoal = z.infer<typeof selectGoalSchema>;
+
+// Authentication schemas
+export const registerSchema = z.object({
+  email: z.string().email("Invalid email address").toLowerCase().trim(),
+  password: z.string().min(8, "Password must be at least 8 characters long"),
+  firstName: z.string().trim().optional(),
+  lastName: z.string().trim().optional(),
+});
+
+export const loginSchema = z.object({
+  email: z.string().email("Invalid email address").toLowerCase().trim(),
+  password: z.string().min(1, "Password is required"),
+});
+
+export type RegisterRequest = z.infer<typeof registerSchema>;
+export type LoginRequest = z.infer<typeof loginSchema>;
