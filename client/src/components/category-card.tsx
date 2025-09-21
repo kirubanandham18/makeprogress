@@ -24,14 +24,14 @@ interface CategoryCardProps {
 export default function CategoryCard({ category, goals, onToggleGoal }: CategoryCardProps) {
   const getCategoryIcon = (categoryName: string) => {
     const iconMap: Record<string, string> = {
-      'Personal': 'fas fa-user',
-      'Inner Peace': 'fas fa-leaf',
-      'Health': 'fas fa-heart',
-      'Family': 'fas fa-home',
-      'Career': 'fas fa-briefcase',
-      'Fun': 'fas fa-gamepad',
+      'Personal': '🧠', // Brain for personal development
+      'Inner Peace': '🧘‍♀️', // Meditation pose for inner peace
+      'Health': '💪', // Flexed bicep for health
+      'Family': '👨‍👩‍👧‍👦', // Family emoji
+      'Career': '💼', // Briefcase for career
+      'Fun': '🎮', // Game controller for fun
     };
-    return iconMap[categoryName] || 'fas fa-circle';
+    return iconMap[categoryName] || '⭐';
   };
 
   const getProgressDots = () => {
@@ -48,7 +48,7 @@ export default function CategoryCard({ category, goals, onToggleGoal }: Category
   return (
     <Card className="hover-lift cursor-pointer">
       <div className={`category-${category.color} h-24 rounded-t-xl flex items-center justify-center`}>
-        <i className={`${getCategoryIcon(category.name)} text-white text-2xl`}></i>
+        <span className="text-white text-3xl">{getCategoryIcon(category.name)}</span>
       </div>
       <CardContent className="p-4">
         <h3 className="font-semibold text-foreground mb-2">{category.name}</h3>

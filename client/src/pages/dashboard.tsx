@@ -6,6 +6,7 @@ import { isUnauthorizedError } from "@/lib/authUtils";
 import { apiRequest } from "@/lib/queryClient";
 import AppHeader from "@/components/app-header";
 import CategoryCard from "@/components/category-card";
+import GraphicsCalendar from "@/components/graphics-calendar";
 import ProgressCircle from "@/components/ui/progress-circle";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -238,6 +239,14 @@ export default function Dashboard() {
               </div>
             )}
           </div>
+        </section>
+
+        {/* Graphics Calendar */}
+        <section className="mb-8">
+          <GraphicsCalendar 
+            userGoals={userGoals || []} 
+            onToggleGoal={handleToggleGoal}
+          />
         </section>
 
         {/* Categories Grid */}

@@ -129,14 +129,14 @@ export default function GoalSelection() {
 
   const getCategoryIcon = (categoryName: string) => {
     const iconMap: Record<string, string> = {
-      'Personal': 'fas fa-user',
-      'Inner Peace': 'fas fa-leaf',
-      'Health': 'fas fa-heart',
-      'Family': 'fas fa-home',
-      'Career': 'fas fa-briefcase',
-      'Fun': 'fas fa-gamepad',
+      'Personal': '🧠', // Brain for personal development
+      'Inner Peace': '🧘‍♀️', // Meditation pose for inner peace
+      'Health': '💪', // Flexed bicep for health
+      'Family': '👨‍👩‍👧‍👦', // Family emoji
+      'Career': '💼', // Briefcase for career
+      'Fun': '🎮', // Game controller for fun
     };
-    return iconMap[categoryName] || 'fas fa-circle';
+    return iconMap[categoryName] || '⭐';
   };
 
   const handleGoalToggle = (categoryId: string, goalId: string, checked: boolean) => {
@@ -328,7 +328,7 @@ export default function GoalSelection() {
                         <div className="flex justify-between items-start mb-2">
                           <div className="flex items-center">
                             <div className={`w-4 h-4 category-${rec.goal.category.color} rounded mr-2 flex items-center justify-center`}>
-                              <i className={`${getCategoryIcon(rec.goal.category.name)} text-white text-xs`}></i>
+                              <span className="text-white text-xs">{getCategoryIcon(rec.goal.category.name)}</span>
                             </div>
                             <span className="text-xs font-medium text-muted-foreground">
                               {rec.goal.category.name}
@@ -384,7 +384,7 @@ export default function GoalSelection() {
                   <div className="flex items-center justify-between mb-4">
                     <div className="flex items-center">
                       <div className={`w-6 h-6 category-${category.color} rounded mr-3 flex items-center justify-center`}>
-                        <i className={`${getCategoryIcon(category.name)} text-white text-sm`}></i>
+                        <span className="text-white text-sm">{getCategoryIcon(category.name)}</span>
                       </div>
                       <h3 className="font-semibold text-foreground text-lg">
                         {category.name} Goals ({selectedInCategory.length}/2 selected)
