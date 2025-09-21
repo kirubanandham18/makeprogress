@@ -11,6 +11,12 @@ import ProgressCircle from "@/components/ui/progress-circle";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { useLocation } from "wouter";
+import personalIcon from "@assets/personal_1758464140980.png";
+import innerPeaceIcon from "@assets/innerpeace_1758464155112.png";
+import healthIcon from "@assets/health1_1758464133360.png";
+import familyIcon from "@assets/family1_1758464115422.png";
+import careerIcon from "@assets/carrer1_1758464107256.png";
+import funIcon from "@assets/fun1_1758464127001.png";
 
 interface CategoryStats {
   completed: number;
@@ -52,6 +58,19 @@ interface UserGoal {
     };
   };
 }
+
+// Helper function to get category icon
+const getCategoryIcon = (categoryName: string) => {
+  const iconMap: Record<string, string> = {
+    'Personal': personalIcon,
+    'Inner Peace': innerPeaceIcon, 
+    'Health': healthIcon,
+    'Family': familyIcon,
+    'Career': careerIcon,
+    'Fun': funIcon,
+  };
+  return iconMap[categoryName] || personalIcon;
+};
 
 export default function Dashboard() {
   const { user, isLoading: authLoading, isAuthenticated } = useAuth();
@@ -318,8 +337,12 @@ export default function Dashboard() {
                   .slice(0, 5)
                   .map((userGoal) => (
                     <div key={userGoal.id} className="flex items-center space-x-4 group hover:bg-muted/50 rounded-lg p-2 -m-2 transition-colors">
-                      <div className="w-10 h-10 bg-gradient-to-br from-yellow-400 to-orange-500 rounded-full flex items-center justify-center flex-shrink-0 shadow-lg group-hover:scale-110 transition-transform duration-300">
-                        <i className="fas fa-birthday-cake text-white text-sm animate-pulse"></i>
+                      <div className="w-10 h-10 rounded-full flex items-center justify-center flex-shrink-0 shadow-lg group-hover:scale-110 transition-transform duration-300 bg-white/20 backdrop-blur-sm border-2 border-white/30">
+                        <img 
+                          src={getCategoryIcon(userGoal.goal.category.name)} 
+                          alt={`${userGoal.goal.category.name} icon`}
+                          className="w-8 h-8 object-contain rounded-full"
+                        />
                       </div>
                       <div className="flex-1">
                         <div className="flex items-center space-x-2">
