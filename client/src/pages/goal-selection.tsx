@@ -5,6 +5,7 @@ import { useToast } from "@/hooks/use-toast";
 import { isUnauthorizedError } from "@/lib/authUtils";
 import { apiRequest } from "@/lib/queryClient";
 import AppHeader from "@/components/app-header";
+import CustomGoalForm from "@/components/custom-goal-form";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
@@ -32,6 +33,15 @@ export default function GoalSelection() {
   const queryClient = useQueryClient();
   const [, setLocation] = useLocation();
   const [selectedGoals, setSelectedGoals] = useState<Record<string, string[]>>({});
+  const [customGoalForm, setCustomGoalForm] = useState<{
+    isOpen: boolean;
+    categoryId: string;
+    categoryName: string;
+  }>({
+    isOpen: false,
+    categoryId: "",
+    categoryName: "",
+  });
 
   useEffect(() => {
     if (!authLoading && !isAuthenticated) {
@@ -160,6 +170,27 @@ export default function GoalSelection() {
     selectGoalsMutation.mutate(allSelectedGoals);
   };
 
+  const openCustomGoalForm = (categoryId: string, categoryName: string) => {
+    setCustomGoalForm({
+      isOpen: true,
+      categoryId,
+      categoryName,
+    });
+  };
+
+  const closeCustomGoalForm = () => {
+    setCustomGoalForm({
+      isOpen: false,
+      categoryId: "",
+      categoryName: "",
+    });
+  };
+
+  const handleCustomGoalSuccess = () => {
+    // The query will be invalidated by the CustomGoalForm component
+    // This ensures the new goal appears in the list
+  };
+
   if (authLoading || categoriesLoading || goalsLoading) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-background">
@@ -216,13 +247,24 @@ export default function GoalSelection() {
             return (
               <Card key={category.id} className="hover-lift">
                 <CardContent className="p-6">
-                  <div className="flex items-center mb-4">
-                    <div className={`w-6 h-6 category-${category.color} rounded mr-3 flex items-center justify-center`}>
-                      <i className={`${getCategoryIcon(category.name)} text-white text-sm`}></i>
+                  <div className="flex items-center justify-between mb-4">
+                    <div className="flex items-center">
+                      <div className={`w-6 h-6 category-${category.color} rounded mr-3 flex items-center justify-center`}>
+                        <i className={`${getCategoryIcon(category.name)} text-white text-sm`}></i>
+                      </div>
+                      <h3 className="font-semibold text-foreground text-lg">
+                        {category.name} Goals ({selectedInCategory.length}/2 selected)
+                      </h3>
                     </div>
-                    <h3 className="font-semibold text-foreground text-lg">
-                      {category.name} Goals ({selectedInCategory.length}/2 selected)
-                    </h3>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => openCustomGoalForm(category.id, category.name)}
+                      data-testid={`button-add-custom-goal-${category.name.toLowerCase().replace(' ', '-')}`}
+                    >
+                      <i className="fas fa-plus mr-1 text-xs"></i>
+                      Add Custom
+                    </Button>
                   </div>
                   
                   <div className="space-y-3" data-testid={`list-goals-${category.name.toLowerCase().replace(' ', '-')}`}>
@@ -288,6 +330,14 @@ export default function GoalSelection() {
             </p>
           </div>
         )}
+
+        <CustomGoalForm
+          categoryId={customGoalForm.categoryId}
+          categoryName={customGoalForm.categoryName}
+          isOpen={customGoalForm.isOpen}
+          onClose={closeCustomGoalForm}
+          onSuccess={handleCustomGoalSuccess}
+        />
       </main>
     </div>
   );

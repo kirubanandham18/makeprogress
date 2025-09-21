@@ -117,14 +117,42 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.get('/api/categories/:id/goals', isAuthenticated, async (req, res) => {
+  app.get('/api/categories/:id/goals', isAuthenticated, async (req: any, res) => {
     try {
       const { id } = req.params;
-      const goals = await storage.getGoalsByCategory(id);
+      const userId = req.user.claims.sub;
+      const goals = await storage.getGoalsByCategoryAndUser(id, userId);
       res.json(goals);
     } catch (error) {
       console.error("Error fetching goals:", error);
       res.status(500).json({ message: "Failed to fetch goals" });
+    }
+  });
+
+  app.post('/api/categories/:id/goals', isAuthenticated, async (req: any, res) => {
+    try {
+      const { id: categoryId } = req.params;
+      const userId = req.user.claims.sub;
+      const { description } = req.body;
+
+      if (!description || description.trim().length === 0) {
+        return res.status(400).json({ message: "Goal description is required" });
+      }
+
+      if (description.length > 200) {
+        return res.status(400).json({ message: "Goal description must be 200 characters or less" });
+      }
+
+      const goalData = {
+        categoryId,
+        description: description.trim(),
+      };
+
+      const newGoal = await storage.createCustomGoal(goalData, userId);
+      res.status(201).json(newGoal);
+    } catch (error) {
+      console.error("Error creating custom goal:", error);
+      res.status(500).json({ message: "Failed to create custom goal" });
     }
   });
 

@@ -50,6 +50,8 @@ export const goals = pgTable("goals", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
   categoryId: varchar("category_id").notNull().references(() => categories.id),
   description: text("description").notNull(),
+  createdBy: varchar("created_by").references(() => users.id), // null for system goals, user ID for custom goals
+  isCustom: boolean("is_custom").default(false),
   createdAt: timestamp("created_at").defaultNow(),
 });
 
@@ -82,12 +84,17 @@ export const goalsRelations = relations(goals, ({ one, many }) => ({
     fields: [goals.categoryId],
     references: [categories.id],
   }),
+  creator: one(users, {
+    fields: [goals.createdBy],
+    references: [users.id],
+  }),
   userGoals: many(userGoals),
 }));
 
 export const usersRelations = relations(users, ({ many }) => ({
   userGoals: many(userGoals),
   achievements: many(achievements),
+  customGoals: many(goals),
 }));
 
 export const userGoalsRelations = relations(userGoals, ({ one }) => ({

@@ -16,7 +16,7 @@ import {
   type InsertAchievement,
 } from "@shared/schema";
 import { db } from "./db";
-import { eq, and, gte, lte, desc, asc } from "drizzle-orm";
+import { eq, and, or, gte, lte, desc, asc } from "drizzle-orm";
 
 // Interface for storage operations
 export interface IStorage {
@@ -31,7 +31,9 @@ export interface IStorage {
   
   // Goal operations
   getGoalsByCategory(categoryId: string): Promise<Goal[]>;
+  getGoalsByCategoryAndUser(categoryId: string, userId: string): Promise<Goal[]>;
   createGoal(goal: InsertGoal): Promise<Goal>;
+  createCustomGoal(goal: InsertGoal, userId: string): Promise<Goal>;
   
   // User goal operations
   getUserGoalsForWeek(userId: string, weekStart: Date): Promise<(UserGoal & { goal: Goal & { category: Category } })[]>;
@@ -86,14 +88,43 @@ export class DatabaseStorage implements IStorage {
     return await db
       .select()
       .from(goals)
-      .where(eq(goals.categoryId, categoryId))
+      .where(and(eq(goals.categoryId, categoryId), eq(goals.isCustom, false)))
       .orderBy(asc(goals.description));
+  }
+
+  async getGoalsByCategoryAndUser(categoryId: string, userId: string): Promise<Goal[]> {
+    return await db
+      .select()
+      .from(goals)
+      .where(
+        and(
+          eq(goals.categoryId, categoryId),
+          or(
+            eq(goals.isCustom, false), // System goals
+            eq(goals.createdBy, userId) // User's custom goals
+          )
+        )
+      )
+      .orderBy(asc(goals.isCustom), asc(goals.description)); // System goals first, then custom
   }
 
   async createGoal(goal: InsertGoal): Promise<Goal> {
     const [newGoal] = await db
       .insert(goals)
       .values(goal)
+      .returning();
+    return newGoal;
+  }
+
+  async createCustomGoal(goal: InsertGoal, userId: string): Promise<Goal> {
+    const customGoal = {
+      ...goal,
+      createdBy: userId,
+      isCustom: true,
+    };
+    const [newGoal] = await db
+      .insert(goals)
+      .values(customGoal)
       .returning();
     return newGoal;
   }
