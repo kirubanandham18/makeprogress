@@ -74,6 +74,34 @@ export const achievements = pgTable("achievements", {
   createdAt: timestamp("created_at").defaultNow(),
 });
 
+export const friendships = pgTable("friendships", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  requesterId: varchar("requester_id").notNull().references(() => users.id),
+  addresseeId: varchar("addressee_id").notNull().references(() => users.id),
+  status: varchar("status", { length: 20 }).notNull().default("pending"), // "pending", "accepted", "declined", "blocked"
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+});
+
+export const activityFeed = pgTable("activity_feed", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  userId: varchar("user_id").notNull().references(() => users.id),
+  activityType: varchar("activity_type", { length: 50 }).notNull(), // "achievement_earned", "goal_completed", "week_completed", "custom_goal_created"
+  data: jsonb("data"), // JSON object with activity-specific data
+  message: text("message"), // Human-readable activity message
+  isPublic: boolean("is_public").default(true), // Whether friends can see this activity
+  createdAt: timestamp("created_at").defaultNow(),
+});
+
+export const sharedAchievements = pgTable("shared_achievements", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  userId: varchar("user_id").notNull().references(() => users.id),
+  achievementId: varchar("achievement_id").notNull().references(() => achievements.id),
+  sharedWith: varchar("shared_with"), // "friends", "public", or specific user ID
+  message: text("message"), // Optional message when sharing
+  createdAt: timestamp("created_at").defaultNow(),
+});
+
 // Relations
 export const categoriesRelations = relations(categories, ({ many }) => ({
   goals: many(goals),
@@ -95,6 +123,10 @@ export const usersRelations = relations(users, ({ many }) => ({
   userGoals: many(userGoals),
   achievements: many(achievements),
   customGoals: many(goals),
+  requestedFriendships: many(friendships, { relationName: "requester" }),
+  receivedFriendships: many(friendships, { relationName: "addressee" }),
+  activities: many(activityFeed),
+  sharedAchievements: many(sharedAchievements),
 }));
 
 export const userGoalsRelations = relations(userGoals, ({ one }) => ({
@@ -108,10 +140,42 @@ export const userGoalsRelations = relations(userGoals, ({ one }) => ({
   }),
 }));
 
-export const achievementsRelations = relations(achievements, ({ one }) => ({
+export const achievementsRelations = relations(achievements, ({ one, many }) => ({
   user: one(users, {
     fields: [achievements.userId],
     references: [users.id],
+  }),
+  sharedAchievements: many(sharedAchievements),
+}));
+
+export const friendshipsRelations = relations(friendships, ({ one }) => ({
+  requester: one(users, {
+    fields: [friendships.requesterId],
+    references: [users.id],
+    relationName: "requester",
+  }),
+  addressee: one(users, {
+    fields: [friendships.addresseeId], 
+    references: [users.id],
+    relationName: "addressee",
+  }),
+}));
+
+export const activityFeedRelations = relations(activityFeed, ({ one }) => ({
+  user: one(users, {
+    fields: [activityFeed.userId],
+    references: [users.id],
+  }),
+}));
+
+export const sharedAchievementsRelations = relations(sharedAchievements, ({ one }) => ({
+  user: one(users, {
+    fields: [sharedAchievements.userId],
+    references: [users.id],
+  }),
+  achievement: one(achievements, {
+    fields: [sharedAchievements.achievementId],
+    references: [achievements.id],
   }),
 }));
 
@@ -136,6 +200,22 @@ export const insertAchievementSchema = createInsertSchema(achievements).omit({
   createdAt: true,
 });
 
+export const insertFriendshipSchema = createInsertSchema(friendships).omit({
+  id: true,
+  createdAt: true,
+  updatedAt: true,
+});
+
+export const insertActivityFeedSchema = createInsertSchema(activityFeed).omit({
+  id: true,
+  createdAt: true,
+});
+
+export const insertSharedAchievementSchema = createInsertSchema(sharedAchievements).omit({
+  id: true,
+  createdAt: true,
+});
+
 export const selectGoalSchema = createInsertSchema(userGoals).pick({
   goalId: true,
 });
@@ -147,8 +227,14 @@ export type Category = typeof categories.$inferSelect;
 export type Goal = typeof goals.$inferSelect;
 export type UserGoal = typeof userGoals.$inferSelect;
 export type Achievement = typeof achievements.$inferSelect;
+export type Friendship = typeof friendships.$inferSelect;
+export type ActivityFeed = typeof activityFeed.$inferSelect;
+export type SharedAchievement = typeof sharedAchievements.$inferSelect;
 export type InsertCategory = z.infer<typeof insertCategorySchema>;
 export type InsertGoal = z.infer<typeof insertGoalSchema>;
 export type InsertUserGoal = z.infer<typeof insertUserGoalSchema>;
 export type InsertAchievement = z.infer<typeof insertAchievementSchema>;
+export type InsertFriendship = z.infer<typeof insertFriendshipSchema>;
+export type InsertActivityFeed = z.infer<typeof insertActivityFeedSchema>;
+export type InsertSharedAchievement = z.infer<typeof insertSharedAchievementSchema>;
 export type SelectGoal = z.infer<typeof selectGoalSchema>;

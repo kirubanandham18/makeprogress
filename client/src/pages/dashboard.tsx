@@ -254,6 +254,14 @@ export default function Dashboard() {
             <h2 className="text-xl font-bold text-foreground">Goal Categories</h2>
             <div className="flex gap-3">
               <Button 
+                onClick={() => setLocation("/social")}
+                variant="outline"
+                className="border-green-500 text-green-600 hover:bg-green-500 hover:text-white"
+                data-testid="button-social"
+              >
+                <i className="fas fa-users mr-2"></i>Social
+              </Button>
+              <Button 
                 onClick={() => setLocation("/analytics")}
                 variant="outline"
                 className="border-primary text-primary hover:bg-primary hover:text-primary-foreground"

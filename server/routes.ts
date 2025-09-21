@@ -365,6 +365,127 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Social features routes
+  app.post('/api/friends/request', isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.claims.sub;
+      const { email } = req.body;
+      
+      if (!email) {
+        return res.status(400).json({ message: "Email is required" });
+      }
+
+      const friendship = await storage.sendFriendRequest(userId, email);
+      res.status(201).json(friendship);
+    } catch (error: any) {
+      console.error("Error sending friend request:", error);
+      res.status(400).json({ message: error.message || "Failed to send friend request" });
+    }
+  });
+
+  app.get('/api/friends/requests', isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.claims.sub;
+      const requests = await storage.getFriendRequests(userId);
+      res.json(requests);
+    } catch (error) {
+      console.error("Error fetching friend requests:", error);
+      res.status(500).json({ message: "Failed to fetch friend requests" });
+    }
+  });
+
+  app.patch('/api/friends/requests/:id', isAuthenticated, async (req: any, res) => {
+    try {
+      const { id } = req.params;
+      const { status } = req.body;
+      
+      if (!["accepted", "declined"].includes(status)) {
+        return res.status(400).json({ message: "Status must be 'accepted' or 'declined'" });
+      }
+
+      const friendship = await storage.respondToFriendRequest(id, status);
+      res.json(friendship);
+    } catch (error: any) {
+      console.error("Error responding to friend request:", error);
+      res.status(400).json({ message: error.message || "Failed to respond to friend request" });
+    }
+  });
+
+  app.get('/api/friends', isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.claims.sub;
+      const friends = await storage.getFriends(userId);
+      res.json(friends);
+    } catch (error) {
+      console.error("Error fetching friends:", error);
+      res.status(500).json({ message: "Failed to fetch friends" });
+    }
+  });
+
+  app.delete('/api/friends/:id', isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.claims.sub;
+      const { id } = req.params;
+      
+      await storage.removeFriend(userId, id);
+      res.status(204).send();
+    } catch (error) {
+      console.error("Error removing friend:", error);
+      res.status(500).json({ message: "Failed to remove friend" });
+    }
+  });
+
+  app.get('/api/activity-feed', isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.claims.sub;
+      const activities = await storage.getActivityFeed(userId);
+      res.json(activities);
+    } catch (error) {
+      console.error("Error fetching activity feed:", error);
+      res.status(500).json({ message: "Failed to fetch activity feed" });
+    }
+  });
+
+  app.post('/api/achievements/:id/share', isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.claims.sub;
+      const { id: achievementId } = req.params;
+      const { sharedWith = "friends", message } = req.body;
+      
+      const sharedAchievement = await storage.shareAchievement({
+        userId,
+        achievementId,
+        sharedWith,
+        message,
+      });
+
+      // Create activity feed entry for sharing
+      await storage.createActivity({
+        userId,
+        activityType: "achievement_shared",
+        data: { achievementId, sharedWith },
+        message: message || `Shared an achievement with ${sharedWith}`,
+        isPublic: true,
+      });
+
+      res.status(201).json(sharedAchievement);
+    } catch (error) {
+      console.error("Error sharing achievement:", error);
+      res.status(500).json({ message: "Failed to share achievement" });
+    }
+  });
+
+  app.get('/api/shared-achievements', isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.claims.sub;
+      const sharedAchievements = await storage.getSharedAchievements(userId);
+      res.json(sharedAchievements);
+    } catch (error) {
+      console.error("Error fetching shared achievements:", error);
+      res.status(500).json({ message: "Failed to fetch shared achievements" });
+    }
+  });
+
   const httpServer = createServer(app);
   return httpServer;
 }

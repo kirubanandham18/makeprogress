@@ -4,16 +4,25 @@ import {
   goals,
   userGoals,
   achievements,
+  friendships,
+  activityFeed,
+  sharedAchievements,
   type User,
   type UpsertUser,
   type Category,
   type Goal,
   type UserGoal,
   type Achievement,
+  type Friendship,
+  type ActivityFeed,
+  type SharedAchievement,
   type InsertCategory,
   type InsertGoal,
   type InsertUserGoal,
   type InsertAchievement,
+  type InsertFriendship,
+  type InsertActivityFeed,
+  type InsertSharedAchievement,
 } from "@shared/schema";
 import { db } from "./db";
 import { eq, and, or, gte, lte, desc, asc } from "drizzle-orm";
@@ -69,6 +78,17 @@ export interface IStorage {
     level: string;
     categoriesCompleted: number;
   }[]>;
+  
+  // Social operations
+  sendFriendRequest(requesterId: string, addresseeEmail: string): Promise<Friendship>;
+  getFriendRequests(userId: string): Promise<(Friendship & { requester: User; addressee: User })[]>;
+  respondToFriendRequest(friendshipId: string, status: "accepted" | "declined"): Promise<Friendship>;
+  getFriends(userId: string): Promise<User[]>;
+  removeFriend(userId: string, friendId: string): Promise<void>;
+  createActivity(activity: InsertActivityFeed): Promise<ActivityFeed>;
+  getActivityFeed(userId: string): Promise<(ActivityFeed & { user: User })[]>;
+  shareAchievement(share: InsertSharedAchievement): Promise<SharedAchievement>;
+  getSharedAchievements(userId: string): Promise<(SharedAchievement & { user: User; achievement: Achievement })[]>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -446,6 +466,240 @@ export class DatabaseStorage implements IStorage {
       level: row.level,
       categoriesCompleted: row.categoriesCompleted,
     }));
+  }
+
+  // Social operations
+  async sendFriendRequest(requesterId: string, addresseeEmail: string): Promise<Friendship> {
+    // First find the addressee by email
+    const [addressee] = await db
+      .select()
+      .from(users)
+      .where(eq(users.email, addresseeEmail));
+
+    if (!addressee) {
+      throw new Error("User not found with that email address");
+    }
+
+    if (addressee.id === requesterId) {
+      throw new Error("Cannot send friend request to yourself");
+    }
+
+    // Check if friendship already exists
+    const [existing] = await db
+      .select()
+      .from(friendships)
+      .where(
+        or(
+          and(eq(friendships.requesterId, requesterId), eq(friendships.addresseeId, addressee.id)),
+          and(eq(friendships.requesterId, addressee.id), eq(friendships.addresseeId, requesterId))
+        )
+      );
+
+    if (existing) {
+      throw new Error("Friend request already exists or you are already friends");
+    }
+
+    const [friendship] = await db
+      .insert(friendships)
+      .values({
+        requesterId,
+        addresseeId: addressee.id,
+        status: "pending",
+      })
+      .returning();
+
+    return friendship;
+  }
+
+  async getFriendRequests(userId: string): Promise<(Friendship & { requester: User; addressee: User })[]> {
+    const result = await db
+      .select({
+        id: friendships.id,
+        requesterId: friendships.requesterId,
+        addresseeId: friendships.addresseeId,
+        status: friendships.status,
+        createdAt: friendships.createdAt,
+        updatedAt: friendships.updatedAt,
+        requester: {
+          id: users.id,
+          email: users.email,
+          firstName: users.firstName,
+          lastName: users.lastName,
+          profileImageUrl: users.profileImageUrl,
+          createdAt: users.createdAt,
+          updatedAt: users.updatedAt,
+        },
+        addressee: {
+          id: users.id,
+          email: users.email,
+          firstName: users.firstName,
+          lastName: users.lastName,
+          profileImageUrl: users.profileImageUrl,
+          createdAt: users.createdAt,
+          updatedAt: users.updatedAt,
+        },
+      })
+      .from(friendships)
+      .innerJoin(users, eq(friendships.requesterId, users.id))
+      .where(and(eq(friendships.addresseeId, userId), eq(friendships.status, "pending")));
+
+    return result as (Friendship & { requester: User; addressee: User })[];
+  }
+
+  async respondToFriendRequest(friendshipId: string, status: "accepted" | "declined"): Promise<Friendship> {
+    const [friendship] = await db
+      .update(friendships)
+      .set({
+        status,
+        updatedAt: new Date(),
+      })
+      .where(eq(friendships.id, friendshipId))
+      .returning();
+
+    if (!friendship) {
+      throw new Error("Friend request not found");
+    }
+
+    return friendship;
+  }
+
+  async getFriends(userId: string): Promise<User[]> {
+    const result = await db
+      .select({
+        id: users.id,
+        email: users.email,
+        firstName: users.firstName,
+        lastName: users.lastName,
+        profileImageUrl: users.profileImageUrl,
+        createdAt: users.createdAt,
+        updatedAt: users.updatedAt,
+      })
+      .from(friendships)
+      .innerJoin(users, 
+        or(
+          and(eq(friendships.requesterId, userId), eq(users.id, friendships.addresseeId)),
+          and(eq(friendships.addresseeId, userId), eq(users.id, friendships.requesterId))
+        )
+      )
+      .where(eq(friendships.status, "accepted"));
+
+    return result;
+  }
+
+  async removeFriend(userId: string, friendId: string): Promise<void> {
+    await db
+      .delete(friendships)
+      .where(
+        and(
+          eq(friendships.status, "accepted"),
+          or(
+            and(eq(friendships.requesterId, userId), eq(friendships.addresseeId, friendId)),
+            and(eq(friendships.requesterId, friendId), eq(friendships.addresseeId, userId))
+          )
+        )
+      );
+  }
+
+  async createActivity(activity: InsertActivityFeed): Promise<ActivityFeed> {
+    const [newActivity] = await db
+      .insert(activityFeed)
+      .values(activity)
+      .returning();
+
+    return newActivity;
+  }
+
+  async getActivityFeed(userId: string): Promise<(ActivityFeed & { user: User })[]> {
+    // Get user's friends first
+    const friendIds = await this.getFriends(userId);
+    const allUserIds = [userId, ...friendIds.map(friend => friend.id)];
+
+    const result = await db
+      .select({
+        id: activityFeed.id,
+        userId: activityFeed.userId,
+        activityType: activityFeed.activityType,
+        data: activityFeed.data,
+        message: activityFeed.message,
+        isPublic: activityFeed.isPublic,
+        createdAt: activityFeed.createdAt,
+        user: {
+          id: users.id,
+          email: users.email,
+          firstName: users.firstName,
+          lastName: users.lastName,
+          profileImageUrl: users.profileImageUrl,
+          createdAt: users.createdAt,
+          updatedAt: users.updatedAt,
+        },
+      })
+      .from(activityFeed)
+      .innerJoin(users, eq(activityFeed.userId, users.id))
+      .where(
+        and(
+          or(...allUserIds.map(id => eq(activityFeed.userId, id))),
+          eq(activityFeed.isPublic, true)
+        )
+      )
+      .orderBy(desc(activityFeed.createdAt))
+      .limit(50);
+
+    return result as (ActivityFeed & { user: User })[];
+  }
+
+  async shareAchievement(share: InsertSharedAchievement): Promise<SharedAchievement> {
+    const [sharedAchievement] = await db
+      .insert(sharedAchievements)
+      .values(share)
+      .returning();
+
+    return sharedAchievement;
+  }
+
+  async getSharedAchievements(userId: string): Promise<(SharedAchievement & { user: User; achievement: Achievement })[]> {
+    // Get user's friends first
+    const friendIds = await this.getFriends(userId);
+    const allUserIds = [userId, ...friendIds.map(friend => friend.id)];
+
+    const result = await db
+      .select({
+        id: sharedAchievements.id,
+        userId: sharedAchievements.userId,
+        achievementId: sharedAchievements.achievementId,
+        sharedWith: sharedAchievements.sharedWith,
+        message: sharedAchievements.message,
+        createdAt: sharedAchievements.createdAt,
+        user: {
+          id: users.id,
+          email: users.email,
+          firstName: users.firstName,
+          lastName: users.lastName,
+          profileImageUrl: users.profileImageUrl,
+          createdAt: users.createdAt,
+          updatedAt: users.updatedAt,
+        },
+        achievement: {
+          id: achievements.id,
+          userId: achievements.userId,
+          weekStart: achievements.weekStart,
+          categoriesCompleted: achievements.categoriesCompleted,
+          level: achievements.level,
+          createdAt: achievements.createdAt,
+        },
+      })
+      .from(sharedAchievements)
+      .innerJoin(users, eq(sharedAchievements.userId, users.id))
+      .innerJoin(achievements, eq(sharedAchievements.achievementId, achievements.id))
+      .where(
+        or(
+          eq(sharedAchievements.sharedWith, "public"),
+          eq(sharedAchievements.sharedWith, "friends"),
+          ...allUserIds.map(id => eq(sharedAchievements.userId, id))
+        )
+      )
+      .orderBy(desc(sharedAchievements.createdAt));
+
+    return result as (SharedAchievement & { user: User; achievement: Achievement })[];
   }
 }
 
