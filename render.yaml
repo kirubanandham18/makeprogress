@@ -12,7 +12,7 @@ services:
           name: makeprogress-db
           property: connectionString
       - key: SESSION_SECRET
-        generateValue: true
+        value: "makeprogress-secure-session-secret-key-2024-production-deployment-safe"
 
 databases:
   - name: makeprogress-db
