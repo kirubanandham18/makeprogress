@@ -12,7 +12,7 @@ services:
           name: makeprogress-db
           property: connectionString
       - key: SESSION_SECRET
-        sync: false
+        value: "A/4GDusI6d2dJWwyCp630nuZqkoTSlCNvnJThQHH/zzaUt6/dF1lBcSLLu05Oo8M"
 
 databases:
   - name: makeprogress-db
