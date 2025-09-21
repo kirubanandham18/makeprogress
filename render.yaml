@@ -3,7 +3,7 @@ services:
     name: makeprogress
     runtime: node
     plan: free
-    buildCommand: NPM_CONFIG_PRODUCTION=false npm install && npm run build && npm run db:push
+    buildCommand: NPM_CONFIG_PRODUCTION=false npm install && npm run build && npm run db:push --force
     startCommand: npm start
     healthCheckPath: /api/health
     envVars:
