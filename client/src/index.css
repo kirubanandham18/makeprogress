@@ -1,0 +1,117 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --background: hsl(0, 0%, 98%);
+  --foreground: hsl(222, 84%, 5%);
+  --card: hsl(0, 0%, 100%);
+  --card-foreground: hsl(222, 84%, 5%);
+  --primary: hsl(262, 80%, 65%);
+  --primary-foreground: hsl(0, 0%, 100%);
+  --secondary: hsl(24, 95%, 53%);
+  --secondary-foreground: hsl(0, 0%, 100%);
+  --muted: hsl(210, 40%, 96%);
+  --muted-foreground: hsl(215, 16%, 47%);
+  --accent: hsl(142, 76%, 36%);
+  --accent-foreground: hsl(0, 0%, 100%);
+  --destructive: hsl(0, 84%, 60%);
+  --destructive-foreground: hsl(0, 0%, 100%);
+  --border: hsl(214, 32%, 91%);
+  --input: hsl(214, 32%, 91%);
+  --ring: hsl(262, 80%, 65%);
+  --radius: 0.75rem;
+  --font-sans: Inter, var(--font-sans);
+  --font-serif: Georgia, serif;
+  --font-mono: Menlo, monospace;
+  
+  /* Category colors */
+  --category-personal-start: hsl(262, 80%, 65%);
+  --category-personal-end: hsl(276, 76%, 79%);
+  --category-peace-start: hsl(188, 94%, 44%);
+  --category-peace-end: hsl(189, 84%, 72%);
+  --category-health-start: hsl(142, 76%, 36%);
+  --category-health-end: hsl(150, 69%, 67%);
+  --category-family-start: hsl(37, 91%, 55%);
+  --category-family-end: hsl(53, 98%, 58%);
+  --category-career-start: hsl(0, 72%, 51%);
+  --category-career-end: hsl(0, 77%, 78%);
+  --category-fun-start: hsl(328, 85%, 50%);
+  --category-fun-end: hsl(330, 69%, 75%);
+}
+
+.dark {
+  --background: hsl(0, 0%, 0%);
+  --foreground: hsl(200, 7%, 91%);
+  --card: hsl(228, 10%, 10%);
+  --card-foreground: hsl(0, 0%, 85%);
+  --primary: hsl(262, 80%, 65%);
+  --primary-foreground: hsl(0, 0%, 100%);
+  --secondary: hsl(24, 95%, 53%);
+  --secondary-foreground: hsl(0, 0%, 100%);
+  --muted: hsl(0, 0%, 9%);
+  --muted-foreground: hsl(210, 3%, 46%);
+  --accent: hsl(142, 76%, 36%);
+  --accent-foreground: hsl(0, 0%, 100%);
+  --destructive: hsl(0, 84%, 60%);
+  --destructive-foreground: hsl(0, 0%, 100%);
+  --border: hsl(210, 5%, 15%);
+  --input: hsl(208, 28%, 18%);
+  --ring: hsl(262, 80%, 65%);
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+
+  body {
+    @apply font-sans antialiased bg-background text-foreground;
+  }
+}
+
+@layer components {
+  .gradient-bg {
+    background: linear-gradient(135deg, var(--category-personal-start) 0%, var(--category-family-start) 100%);
+  }
+  
+  .category-personal { 
+    background: linear-gradient(135deg, var(--category-personal-start) 0%, var(--category-personal-end) 100%); 
+  }
+  .category-peace { 
+    background: linear-gradient(135deg, var(--category-peace-start) 0%, var(--category-peace-end) 100%); 
+  }
+  .category-health { 
+    background: linear-gradient(135deg, var(--category-health-start) 0%, var(--category-health-end) 100%); 
+  }
+  .category-family { 
+    background: linear-gradient(135deg, var(--category-family-start) 0%, var(--category-family-end) 100%); 
+  }
+  .category-career { 
+    background: linear-gradient(135deg, var(--category-career-start) 0%, var(--category-career-end) 100%); 
+  }
+  .category-fun { 
+    background: linear-gradient(135deg, var(--category-fun-start) 0%, var(--category-fun-end) 100%); 
+  }
+  
+  .progress-circle {
+    transition: stroke-dasharray 0.5s ease-in-out;
+  }
+  
+  .hover-lift {
+    transition: transform 0.2s ease-in-out, box-shadow 0.2s ease-in-out;
+  }
+  .hover-lift:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+  }
+  
+  .achievement-badge {
+    animation: pulse 2s infinite;
+  }
+  
+  @keyframes pulse {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.8; }
+  }
+}
