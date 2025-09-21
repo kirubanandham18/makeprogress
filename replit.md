@@ -1,8 +1,8 @@
-# GoalFlow - Weekly Personal Development Goal Tracker
+# makeprogress - Weekly Personal Development Goal Tracker
 
 ## Overview
 
-GoalFlow is a comprehensive web application designed to help users set, track, and achieve weekly personal development goals across six distinct life categories: Personal, Inner Peace, Health, Family, Career, and Fun. The application features a gamified approach to goal tracking with achievement levels and progress monitoring, encouraging holistic personal growth through structured weekly goal completion.
+makeprogress is a comprehensive web application designed to help users set, track, and achieve weekly personal development goals across six distinct life categories: Personal, Inner Peace, Health, Family, Career, and Fun. The application features a gamified approach to goal tracking with achievement levels and progress monitoring, encouraging holistic personal growth through structured weekly goal completion.
 
 ## User Preferences
 

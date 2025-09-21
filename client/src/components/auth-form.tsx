@@ -8,6 +8,7 @@ import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest, setStoredToken } from "@/lib/queryClient";
 import { Eye, EyeOff, User, Mail, Lock } from "lucide-react";
+import goalFlowIcon from "@/assets/goalflow-icon.png";
 
 interface AuthResponse {
   user: {
@@ -69,7 +70,7 @@ export default function AuthForm() {
       queryClient.setQueryData(["/api/auth/user"], data.user);
       queryClient.invalidateQueries({ queryKey: ["/api/auth/user"] });
       toast({
-        title: "Welcome to GoalFlow!",
+        title: "Welcome to makeprogress!",
         description: "Your account has been created successfully.",
       });
     },
@@ -128,11 +129,13 @@ export default function AuthForm() {
     <div className="min-h-screen flex items-center justify-center bg-background p-4">
       <Card className="w-full max-w-md">
         <CardHeader className="text-center space-y-4">
-          <div className="w-16 h-16 gradient-bg rounded-xl flex items-center justify-center mx-auto">
-            <i className="fas fa-bullseye text-white text-2xl"></i>
-          </div>
+          <img 
+            src={goalFlowIcon} 
+            alt="makeprogress Logo" 
+            className="w-16 h-16 mx-auto"
+          />
           <div>
-            <CardTitle className="text-2xl font-bold">GoalFlow</CardTitle>
+            <CardTitle className="text-2xl font-bold">makeprogress</CardTitle>
             <CardDescription>
               Track your weekly goals across six life categories
             </CardDescription>

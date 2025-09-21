@@ -92,7 +92,7 @@ export default function AppHeader({ user }: AppHeaderProps) {
           <div className="flex items-center space-x-3">
             <img 
               src={goalFlowIcon} 
-              alt="GoalFlow Icon" 
+              alt="makeprogress Icon" 
               className="w-8 h-8 cursor-pointer hover:opacity-80 transition-opacity"
               onClick={() => setLocation("/")}
               data-testid="image-logo"
@@ -102,7 +102,7 @@ export default function AppHeader({ user }: AppHeaderProps) {
               onClick={() => setLocation("/")}
               data-testid="link-home"
             >
-              GoalFlow
+              makeprogress
             </h1>
           </div>
           
