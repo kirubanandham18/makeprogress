@@ -1,0 +1,97 @@
+**Situation**
+A comprehensive web application designed to help users set, track, and achieve weekly personal development goals across six distinct life categories: Personal, Inner Peace, Health, Family, Career, and Fun.
+
+**Task**
+Design and develop a full-stack web application using Java Spring Boot for backend, React for frontend, with a database to support user goal tracking, selection, and achievement progression.
+
+**Objective**
+Create an engaging, user-friendly platform that motivates individuals to pursue holistic personal growth by selecting and completing goals across multiple life domains, with built-in gamification and progress tracking.
+
+**Knowledge**
+Categories and Goals:
+1. Personal Goals
+2. Inner Peace Goals
+3. Health Goals
+4. Family Goals
+5. Career Goals
+6. Fun Goals
+
+Goal Selection Rules:
+- Users must select 2 goals from each category per week
+- Goals can be marked as completed or pending
+- Weekly progress resets automatically
+
+Achievement Levels:
+- 2 goals completed in 6 categories: "OMG! You Slayed It!"
+- 2 goals completed in 4 categories: "You Rock!"
+- 2 goals completed in 2 categories: "You're on the right track!"
+
+Authentication Approach:
+- Support social media login integration
+- Allow simple username/password registration
+- No email verification required
+
+Deployment Strategy:
+- Prioritize local server deployment
+- Use Heroku as a secondary hosting option
+- Implement basic server configuration for easy setup
+
+Technical Requirements:
+- Backend: Java Spring Boot
+- Frontend: React
+- Authentication: Social media and basic login
+- Database: Store user, categories, goals, and progress
+
+**Constraints**
+- Implement flexible authentication methods
+- Support goal selection and tracking
+- Provide achievement badges
+- Enable weekly goal reset
+- Ensure user-friendly interface
+
+**Examples**
+"""<Replace this text with the UI SCREENSHOTS or upload a file>""" - User to provide screenshots of similar app designs to guide UI/UX development
+
+**Technical Architecture**
+Backend Entities:
+- Category (id, name)
+- Goal (id, categoryId, description)
+- User (id, name, email, password, social_login_id)
+- UserGoal (id, userId, goalId, status, weekNumber)
+
+Core APIs:
+- GET /categories
+- GET /categories/{id}/goals
+- POST /user/{id}/select-goals
+- PATCH /user-goals/{id}/complete
+- GET /user/{id}/progress
+- POST /auth/social-login
+- POST /auth/register
+
+Frontend Screens:
+- Social Media Login
+- Standard Login/Register
+- Dashboard
+- Category View
+- Goal Selection
+- Goal Tracking
+- Achievements Display
+
+**Implementation Guidelines**
+The assistant should:
+1. Prioritize user experience and intuitive design
+2. Ensure robust error handling
+3. Implement clean, modular code architecture
+4. Focus on performance and scalability
+5. Create responsive and accessible UI components
+6. Integrate multiple login methods seamlessly
+7. Ensure secure handling of user authentication data
+
+**Deployment Considerations**
+- Prepare for local server deployment
+- Configure Heroku deployment as backup option
+- Implement basic security measures
+- Use Docker for potential containerization
+- Ensure easy setup and minimal configuration
+
+Your life depends on creating an intuitive, engaging application that makes personal goal tracking feel like an exciting journey of self-improvement. The success of this app hinges on making goal selection, tracking, and achievement feel effortless and motivating for users.
