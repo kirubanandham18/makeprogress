@@ -75,10 +75,10 @@ export default function GoalSelection() {
     queryKey: ["/api/goals/all"],
     queryFn: async () => {
       if (!categories) return [];
-      const goalPromises = categories.map(category =>
-        fetch(`/api/categories/${category.id}/goals`, { credentials: "include" })
-          .then(res => res.json())
-      );
+      const goalPromises = categories.map(async category => {
+        const response = await apiRequest("GET", `/api/categories/${category.id}/goals`);
+        return response.json();
+      });
       return Promise.all(goalPromises);
     },
     enabled: isAuthenticated && !!categories,
