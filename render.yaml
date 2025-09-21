@@ -1,0 +1,23 @@
+services:
+  - type: web
+    name: makeprogress
+    runtime: node
+    plan: free
+    buildCommand: npm install && npm run build
+    startCommand: npm start
+    healthCheckPath: /api/health
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: DATABASE_URL
+        fromDatabase:
+          name: makeprogress-db
+          property: connectionString
+      - key: SESSION_SECRET
+        generateValue: true
+
+databases:
+  - name: makeprogress-db
+    databaseName: makeprogress
+    user: makeprogress_user
+    plan: free
