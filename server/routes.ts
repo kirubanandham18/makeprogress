@@ -32,12 +32,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
       if (existingCategories.length === 0) {
         // Create categories
         const categoriesData = [
-          { name: "Personal", description: "Personal development goals", icon: "🧠", color: "personal" },
-          { name: "Inner Peace", description: "Mindfulness and spiritual goals", icon: "🧘‍♀️", color: "peace" },
-          { name: "Health", description: "Physical and mental health goals", icon: "💪", color: "health" },
-          { name: "Family", description: "Family and relationships goals", icon: "👨‍👩‍👧‍👦", color: "family" },
-          { name: "Career", description: "Professional development goals", icon: "💼", color: "career" },
-          { name: "Fun", description: "Recreation and hobby goals", icon: "🎮", color: "fun" },
+          { name: "Personal", description: "Personal development goals", icon: "personal_1758464140980.png", color: "personal" },
+          { name: "Inner Peace", description: "Mindfulness and spiritual goals", icon: "innerpeace_1758464155112.png", color: "peace" },
+          { name: "Health", description: "Physical and mental health goals", icon: "health1_1758464133360.png", color: "health" },
+          { name: "Family", description: "Family and relationships goals", icon: "family1_1758464115422.png", color: "family" },
+          { name: "Career", description: "Professional development goals", icon: "carrer1_1758464107256.png", color: "career" },
+          { name: "Fun", description: "Recreation and hobby goals", icon: "fun1_1758464127001.png", color: "fun" },
         ];
 
         const createdCategories = await Promise.all(

@@ -10,6 +10,12 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import { useLocation } from "wouter";
+import personalIcon from "@assets/personal_1758464140980.png";
+import innerPeaceIcon from "@assets/innerpeace_1758464155112.png";
+import healthIcon from "@assets/health1_1758464133360.png";
+import familyIcon from "@assets/family1_1758464115422.png";
+import careerIcon from "@assets/carrer1_1758464107256.png";
+import funIcon from "@assets/fun1_1758464127001.png";
 
 interface Category {
   id: string;
@@ -129,14 +135,14 @@ export default function GoalSelection() {
 
   const getCategoryIcon = (categoryName: string) => {
     const iconMap: Record<string, string> = {
-      'Personal': '🧠', // Brain for personal development
-      'Inner Peace': '🧘‍♀️', // Meditation pose for inner peace
-      'Health': '💪', // Flexed bicep for health
-      'Family': '👨‍👩‍👧‍👦', // Family emoji
-      'Career': '💼', // Briefcase for career
-      'Fun': '🎮', // Game controller for fun
+      'Personal': personalIcon,
+      'Inner Peace': innerPeaceIcon,
+      'Health': healthIcon,
+      'Family': familyIcon,
+      'Career': careerIcon,
+      'Fun': funIcon,
     };
-    return iconMap[categoryName] || '⭐';
+    return iconMap[categoryName] || personalIcon;
   };
 
   const handleGoalToggle = (categoryId: string, goalId: string, checked: boolean) => {
@@ -328,7 +334,11 @@ export default function GoalSelection() {
                         <div className="flex justify-between items-start mb-2">
                           <div className="flex items-center">
                             <div className={`w-4 h-4 category-${rec.goal.category.color} rounded mr-2 flex items-center justify-center`}>
-                              <span className="text-white text-xs">{getCategoryIcon(rec.goal.category.name)}</span>
+                              <img 
+                                src={getCategoryIcon(rec.goal.category.name)} 
+                                alt={`${rec.goal.category.name} icon`}
+                                className="w-3 h-3 object-contain"
+                              />
                             </div>
                             <span className="text-xs font-medium text-muted-foreground">
                               {rec.goal.category.name}
@@ -384,7 +394,11 @@ export default function GoalSelection() {
                   <div className="flex items-center justify-between mb-4">
                     <div className="flex items-center">
                       <div className={`w-6 h-6 category-${category.color} rounded mr-3 flex items-center justify-center`}>
-                        <span className="text-white text-sm">{getCategoryIcon(category.name)}</span>
+                        <img 
+                          src={getCategoryIcon(category.name)} 
+                          alt={`${category.name} icon`}
+                          className="w-4 h-4 object-contain"
+                        />
                       </div>
                       <h3 className="font-semibold text-foreground text-lg">
                         {category.name} Goals ({selectedInCategory.length}/2 selected)

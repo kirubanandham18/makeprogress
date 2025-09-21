@@ -1,5 +1,11 @@
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
+import personalIcon from "@assets/personal_1758464140980.png";
+import innerPeaceIcon from "@assets/innerpeace_1758464155112.png";
+import healthIcon from "@assets/health1_1758464133360.png";
+import familyIcon from "@assets/family1_1758464115422.png";
+import careerIcon from "@assets/carrer1_1758464107256.png";
+import funIcon from "@assets/fun1_1758464127001.png";
 
 interface CategoryGoal {
   id: string;
@@ -24,14 +30,14 @@ interface CategoryCardProps {
 export default function CategoryCard({ category, goals, onToggleGoal }: CategoryCardProps) {
   const getCategoryIcon = (categoryName: string) => {
     const iconMap: Record<string, string> = {
-      'Personal': '🧠', // Brain for personal development
-      'Inner Peace': '🧘‍♀️', // Meditation pose for inner peace
-      'Health': '💪', // Flexed bicep for health
-      'Family': '👨‍👩‍👧‍👦', // Family emoji
-      'Career': '💼', // Briefcase for career
-      'Fun': '🎮', // Game controller for fun
+      'Personal': personalIcon,
+      'Inner Peace': innerPeaceIcon, 
+      'Health': healthIcon,
+      'Family': familyIcon,
+      'Career': careerIcon,
+      'Fun': funIcon,
     };
-    return iconMap[categoryName] || '⭐';
+    return iconMap[categoryName] || personalIcon;
   };
 
   const getProgressDots = () => {
@@ -48,7 +54,11 @@ export default function CategoryCard({ category, goals, onToggleGoal }: Category
   return (
     <Card className="hover-lift cursor-pointer">
       <div className={`category-${category.color} h-24 rounded-t-xl flex items-center justify-center`}>
-        <span className="text-white text-3xl">{getCategoryIcon(category.name)}</span>
+        <img 
+          src={getCategoryIcon(category.name)} 
+          alt={`${category.name} icon`}
+          className="w-8 h-8 object-contain"
+        />
       </div>
       <CardContent className="p-4">
         <h3 className="font-semibold text-foreground mb-2">{category.name}</h3>

@@ -1,6 +1,12 @@
 import { useState, useEffect } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { format, startOfWeek, addDays, isSameDay } from "date-fns";
+import personalIcon from "@assets/personal_1758464140980.png";
+import innerPeaceIcon from "@assets/innerpeace_1758464155112.png";
+import healthIcon from "@assets/health1_1758464133360.png";
+import familyIcon from "@assets/family1_1758464115422.png";
+import careerIcon from "@assets/carrer1_1758464107256.png";
+import funIcon from "@assets/fun1_1758464127001.png";
 
 interface UserGoal {
   id: string;
@@ -66,14 +72,14 @@ export default function GraphicsCalendar({ userGoals, onToggleGoal }: GraphicsCa
 
   const getCategoryIcon = (categoryName: string) => {
     const iconMap: Record<string, string> = {
-      'Personal': '🧠',
-      'Inner Peace': '🧘‍♀️', 
-      'Health': '💪',
-      'Family': '👨‍👩‍👧‍👦',
-      'Career': '💼',
-      'Fun': '🎮',
+      'Personal': personalIcon,
+      'Inner Peace': innerPeaceIcon,
+      'Health': healthIcon,
+      'Family': familyIcon,
+      'Career': careerIcon,
+      'Fun': funIcon,
     };
-    return iconMap[categoryName] || '⭐';
+    return iconMap[categoryName] || personalIcon;
   };
 
   const weekDays = Array.from({ length: 7 }, (_, i) => {
@@ -166,8 +172,12 @@ export default function GraphicsCalendar({ userGoals, onToggleGoal }: GraphicsCa
                 data-testid={`goal-card-${userGoal.id}`}
               >
                 <div className="flex items-center space-x-3">
-                  <div className={`w-8 h-8 category-${userGoal.goal.category.color} rounded-full flex items-center justify-center text-white text-sm`}>
-                    {getCategoryIcon(userGoal.goal.category.name)}
+                  <div className={`w-8 h-8 category-${userGoal.goal.category.color} rounded-full flex items-center justify-center`}>
+                    <img 
+                      src={getCategoryIcon(userGoal.goal.category.name)} 
+                      alt={`${userGoal.goal.category.name} icon`}
+                      className="w-5 h-5 object-contain"
+                    />
                   </div>
                   <div className="flex-1">
                     <div className="text-xs font-medium text-muted-foreground mb-1">
