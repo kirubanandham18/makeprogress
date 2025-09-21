@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
+import { useAuth } from "@/hooks/useAuth";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -35,27 +36,59 @@ interface AchievementProgression {
 }
 
 export default function Analytics() {
+  const { isAuthenticated } = useAuth();
   const [timeRange, setTimeRange] = useState("12");
   const [trendsRange, setTrendsRange] = useState("30");
 
   const { data: weeklyStats, isLoading: weeklyLoading } = useQuery<WeeklyStats[]>({
     queryKey: ["/api/analytics/weekly-stats", timeRange],
-    queryFn: () => fetch(`/api/analytics/weekly-stats?weeks=${timeRange}`).then(res => res.json()),
+    queryFn: async () => {
+      const res = await fetch(`/api/analytics/weekly-stats?weeks=${timeRange}`, {
+        headers: {
+          'Authorization': `Bearer ${localStorage.getItem('auth_token')}`,
+        },
+      });
+      if (!res.ok) throw new Error(`${res.status}: ${res.statusText}`);
+      return res.json();
+    },
+    enabled: isAuthenticated,
+    retry: false,
   });
 
   const { data: categoryPerformance, isLoading: categoryLoading } = useQuery<CategoryPerformance[]>({
     queryKey: ["/api/analytics/category-performance", timeRange],
-    queryFn: () => fetch(`/api/analytics/category-performance?weeks=${timeRange}`).then(res => res.json()),
+    queryFn: async () => {
+      const res = await fetch(`/api/analytics/category-performance?weeks=${timeRange}`, {
+        headers: {
+          'Authorization': `Bearer ${localStorage.getItem('auth_token')}`,
+        },
+      });
+      if (!res.ok) throw new Error(`${res.status}: ${res.statusText}`);
+      return res.json();
+    },
+    enabled: isAuthenticated,
+    retry: false,
   });
 
   const { data: completionTrends, isLoading: trendsLoading } = useQuery<CompletionTrend[]>({
     queryKey: ["/api/analytics/completion-trends", trendsRange],
-    queryFn: () => fetch(`/api/analytics/completion-trends?days=${trendsRange}`).then(res => res.json()),
+    queryFn: async () => {
+      const res = await fetch(`/api/analytics/completion-trends?days=${trendsRange}`, {
+        headers: {
+          'Authorization': `Bearer ${localStorage.getItem('auth_token')}`,
+        },
+      });
+      if (!res.ok) throw new Error(`${res.status}: ${res.statusText}`);
+      return res.json();
+    },
+    enabled: isAuthenticated,
+    retry: false,
   });
 
   const { data: achievementProgression, isLoading: achievementLoading } = useQuery<AchievementProgression[]>({
     queryKey: ["/api/analytics/achievement-progression"],
-    queryFn: () => fetch(`/api/analytics/achievement-progression`).then(res => res.json()),
+    enabled: isAuthenticated,
+    retry: false,
   });
 
   // Calculate summary statistics
@@ -250,12 +283,12 @@ export default function Analytics() {
                         fill="#8884d8"
                         dataKey="completionRate"
                       >
-                        {categoryPerformance?.map((entry, index) => (
+                        {Array.isArray(categoryPerformance) ? categoryPerformance.map((entry, index) => (
                           <Cell 
                             key={`cell-${index}`} 
                             fill={categoryColors[entry.categoryName as keyof typeof categoryColors] || "#8884d8"} 
                           />
-                        ))}
+                        )) : null}
                       </Pie>
                       <Tooltip />
                     </PieChart>
@@ -348,7 +381,7 @@ export default function Analytics() {
             </Card>
             
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-              {achievementProgression?.map((achievement, index) => (
+              {Array.isArray(achievementProgression) ? achievementProgression.map((achievement, index) => (
                 <Card key={index} className="border-l-4" style={{ borderLeftColor: levelColors[achievement.level as keyof typeof levelColors] }}>
                   <CardContent className="p-4">
                     <div className="flex items-center justify-between">
@@ -361,7 +394,7 @@ export default function Analytics() {
                     </div>
                   </CardContent>
                 </Card>
-              ))}
+              )) : null}
             </div>
           </TabsContent>
         </Tabs>
